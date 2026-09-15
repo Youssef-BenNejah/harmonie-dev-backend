@@ -1,0 +1,65 @@
+package com.harmoniedev.api.expense.service;
+
+import com.harmoniedev.api.expense.domain.dto.request.DepenseCategoryRequest;
+import com.harmoniedev.api.expense.domain.dto.response.DepenseCategoryResponse;
+import com.harmoniedev.api.expense.domain.model.DepenseCategoryDocument;
+import com.harmoniedev.api.expense.repository.DepenseCategoryRepository;
+import java.util.List;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+@Service
+public class DepenseCategoryService {
+	private final DepenseCategoryRepository repository;
+
+	public DepenseCategoryService(DepenseCategoryRepository repository) {
+		this.repository = repository;
+	}
+
+	public DepenseCategoryResponse create(DepenseCategoryRequest request, String actorId) {
+		DepenseCategoryDocument doc = DepenseCategoryDocument.builder()
+				.name(request.getName())
+				.color(request.getColor())
+				.enabled(request.isEnabled())
+				.createdBy(actorId)
+				.build();
+		repository.save(doc);
+		return toResponse(doc);
+	}
+
+	public List<DepenseCategoryResponse> list() {
+		return repository.findAll().stream().map(this::toResponse).toList();
+	}
+
+	public DepenseCategoryResponse update(String id, DepenseCategoryRequest request) {
+		DepenseCategoryDocument doc = findOrThrow(id);
+		doc.setName(request.getName());
+		doc.setColor(request.getColor());
+		doc.setEnabled(request.isEnabled());
+		repository.save(doc);
+		return toResponse(doc);
+	}
+
+	public void delete(String id) {
+		if (!repository.existsById(id)) {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found");
+		}
+		repository.deleteById(id);
+	}
+
+	private DepenseCategoryDocument findOrThrow(String id) {
+		return repository.findById(id)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found"));
+	}
+
+	private DepenseCategoryResponse toResponse(DepenseCategoryDocument doc) {
+		return DepenseCategoryResponse.builder()
+				.id(doc.getId())
+				.name(doc.getName())
+				.color(doc.getColor())
+				.enabled(doc.isEnabled())
+				.createdBy(doc.getCreatedBy())
+				.build();
+	}
+}

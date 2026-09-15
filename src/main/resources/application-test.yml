@@ -1,0 +1,80 @@
+spring:
+  application:
+    name: harmonie-dev-api
+#  profiles:
+#    active: test
+  data:
+    mongodb:
+      uri: ${TEST_MONGO_URI:mongodb://localhost:27017/test}
+      database: ${TEST_MONGO_DATABASE:harmoniedev_test}
+      auto-index-creation: false
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+  threads:
+    virtual:
+      enabled: true
+  mail:
+    host: ${SPRING_MAIL_HOST:localhost}
+    port: ${SPRING_MAIL_PORT:2525}
+    username: ${SPRING_MAIL_USERNAME:}
+    password: ${SPRING_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${SPRING_MAIL_SMTP_AUTH:false}
+          starttls:
+            enable: ${SPRING_MAIL_SMTP_STARTTLS_ENABLE:false}
+
+app:
+  env: ${APP_ENV:test}
+  port: ${APP_PORT:8080}
+  frontend-url: ${FRONTEND_URL:http://localhost:3000}
+
+mail:
+  from-address: ${SPRING_MAIL_USERNAME:test@harmonie-dev.tn}
+  from-name: ${MAIL_FROM_NAME:Harmonie-dev}
+
+seed:
+  admin-email: ${SEED_ADMIN_EMAIL:}
+  admin-password: ${SEED_ADMIN_PASSWORD:}
+
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME:}
+  api-key: ${CLOUDINARY_API_KEY:}
+  api-secret: ${CLOUDINARY_API_SECRET:}
+
+server:
+  port: ${APP_PORT:8080}
+
+jwt:
+  private-key: ${JWT_PRIVATE_KEY:}
+  public-key: ${JWT_PUBLIC_KEY:}
+  access-token-expiry: ${JWT_ACCESS_TOKEN_EXPIRY_MS:900000}
+  refresh-token-expiry: ${JWT_REFRESH_TOKEN_EXPIRY_MS:604800000}
+
+security:
+  bcrypt-strength: ${BCRYPT_STRENGTH:12}
+  allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000}
+  max-login-attempts: ${MAX_LOGIN_ATTEMPTS:5}
+  lock-duration-minutes: ${ACCOUNT_LOCK_DURATION_MINUTES:30}
+
+actuator:
+  username: ${ACTUATOR_USERNAME:admin}
+  password: ${ACTUATOR_PASSWORD:password}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html

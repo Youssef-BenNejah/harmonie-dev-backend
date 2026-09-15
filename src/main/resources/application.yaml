@@ -1,0 +1,91 @@
+spring:
+  application:
+    name: harmonie-dev-api
+  profiles:
+    active: ${APP_ENV}
+  data:
+    mongodb:
+      uri: mongodb+srv://${DB_USERNAME}:${DB_PASSWORD}@${DB_CLUSTER_URL}/${DB_NAME}?retryWrites=true&w=majority&appName=harmonie-dev-api
+      database: ${DB_NAME}
+      auto-index-creation: false
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      password: ${REDIS_PASSWORD}
+  threads:
+    virtual:
+      enabled: true
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
+  mail:
+    host: ${SPRING_MAIL_HOST}
+    port: ${SPRING_MAIL_PORT}
+    username: ${SPRING_MAIL_USERNAME}
+    password: ${SPRING_MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: ${SPRING_MAIL_SMTP_AUTH}
+          starttls:
+            enable: ${SPRING_MAIL_SMTP_STARTTLS_ENABLE}
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+app:
+  env: ${APP_ENV}
+  port: ${APP_PORT}
+  frontend-url: ${FRONTEND_URL:https://harmonie-dev.netlify.app}
+
+mail:
+  from-address: ${SPRING_MAIL_USERNAME}
+  from-name: ${MAIL_FROM_NAME:Harmonie-dev}
+
+seed:
+  admin-email: ${SEED_ADMIN_EMAIL:}
+  admin-password: ${SEED_ADMIN_PASSWORD:}
+
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME:}
+  api-key: ${CLOUDINARY_API_KEY:}
+  api-secret: ${CLOUDINARY_API_SECRET:}
+
+server:
+  port: ${APP_PORT}
+  compression:
+    enabled: true
+    mime-types: application/json
+    min-response-size: 1024
+
+jwt:
+  private-key: ${JWT_PRIVATE_KEY}
+  public-key: ${JWT_PUBLIC_KEY}
+  access-token-expiry: ${JWT_ACCESS_TOKEN_EXPIRY_MS}
+  refresh-token-expiry: ${JWT_REFRESH_TOKEN_EXPIRY_MS}
+
+security:
+  bcrypt-strength: ${BCRYPT_STRENGTH}
+  allowed-origins: ${ALLOWED_ORIGINS}
+  max-login-attempts: ${MAX_LOGIN_ATTEMPTS}
+  lock-duration-minutes: ${ACCOUNT_LOCK_DURATION_MINUTES}
+
+actuator:
+  username: ${ACTUATOR_USERNAME}
+  password: ${ACTUATOR_PASSWORD}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
