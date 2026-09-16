@@ -67,7 +67,7 @@ public class AuthController {
 			HttpServletRequest httpRequest,
 			HttpServletResponse httpResponse) {
 		AuthResult result = authService.login(request, resolveClientIp(httpRequest), httpRequest.getHeader("User-Agent"));
-		setRefreshCookie(httpResponse, result.getRefreshToken());
+		setRefreshCookie(httpResponse, result.getRefreshToken(), result.isRememberMe());
 		AuthResponse response = AuthResponse.builder()
 				.accessToken(result.getAccessToken())
 				.user(result.getUser())
@@ -81,7 +81,7 @@ public class AuthController {
 			HttpServletRequest httpRequest,
 			HttpServletResponse httpResponse) {
 		AuthResult result = authService.refresh(refreshToken, resolveClientIp(httpRequest), httpRequest.getHeader("User-Agent"));
-		setRefreshCookie(httpResponse, result.getRefreshToken());
+		setRefreshCookie(httpResponse, result.getRefreshToken(), result.isRememberMe());
 		AuthResponse response = AuthResponse.builder()
 				.accessToken(result.getAccessToken())
 				.user(result.getUser())
@@ -222,15 +222,18 @@ public class AuthController {
 		return ResponseEntity.ok(ApiResponse.success("Password updated", null));
 	}
 
-	private void setRefreshCookie(HttpServletResponse response, String token) {
-		ResponseCookie cookie = ResponseCookie.from(REFRESH_COOKIE, token)
+	private void setRefreshCookie(HttpServletResponse response, String token, boolean rememberMe) {
+		ResponseCookie.ResponseCookieBuilder builder = ResponseCookie.from(REFRESH_COOKIE, token)
 				.httpOnly(true)
 				.secure(!appProperties.isDev())
 				.sameSite("Strict")
-				.path("/api/v1/auth")
-				.maxAge(Duration.ofMillis(jwtProperties.getRefreshTokenExpiry()))
-				.build();
-		response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+				.path("/api/v1/auth");
+		// rememberMe=false omits Max-Age entirely, so the browser treats it as a session cookie
+		// (deleted on browser close) instead of persisting across restarts.
+		if (rememberMe) {
+			builder.maxAge(Duration.ofMillis(jwtProperties.getRefreshTokenExpiry()));
+		}
+		response.addHeader(HttpHeaders.SET_COOKIE, builder.build().toString());
 	}
 
 	private void clearRefreshCookie(HttpServletResponse response) {

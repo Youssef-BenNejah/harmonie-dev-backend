@@ -151,12 +151,13 @@ public class AuthService {
 		resetFailedAttempts(user);
 		String accessToken = jwtTokenProvider.generateAccessToken(user);
 		String refreshToken = jwtTokenProvider.generateRefreshToken(user);
-		saveRefreshToken(user, refreshToken);
+		saveRefreshToken(user, refreshToken, request.isRememberMe());
 		auditService.log(user.getId(), AuditAction.LOGIN, ipAddress, userAgent);
 		return AuthResult.builder()
 				.accessToken(accessToken)
 				.refreshToken(refreshToken)
 				.user(toUserResponse(user))
+				.rememberMe(request.isRememberMe())
 				.build();
 	}
 
@@ -181,17 +182,19 @@ public class AuthService {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Account disabled");
 		}
 		RefreshTokenDocument storedToken = findActiveRefreshToken(userId, refreshToken);
+		boolean rememberMe = storedToken.isRememberMe();
 		storedToken.setRevoked(true);
 		refreshTokenRepository.save(storedToken);
 
 		String newAccessToken = jwtTokenProvider.generateAccessToken(user);
 		String newRefreshToken = jwtTokenProvider.generateRefreshToken(user);
-		saveRefreshToken(user, newRefreshToken);
+		saveRefreshToken(user, newRefreshToken, rememberMe);
 		auditService.log(user.getId(), AuditAction.REFRESH, ipAddress, userAgent);
 		return AuthResult.builder()
 				.accessToken(newAccessToken)
 				.refreshToken(newRefreshToken)
 				.user(toUserResponse(user))
+				.rememberMe(rememberMe)
 				.build();
 	}
 
@@ -420,11 +423,12 @@ public class AuthService {
 		return String.valueOf(ThreadLocalRandom.current().nextInt(100000, 1000000));
 	}
 
-	private void saveRefreshToken(UserDocument user, String refreshToken) {
+	private void saveRefreshToken(UserDocument user, String refreshToken, boolean rememberMe) {
 		RefreshTokenDocument doc = RefreshTokenDocument.builder()
 				.userId(user.getId())
 				.tokenHash(hashRefreshToken(refreshToken))
 				.revoked(false)
+				.rememberMe(rememberMe)
 				.expiresAt(jwtTokenProvider.getExpiration(refreshToken))
 				.build();
 		refreshTokenRepository.save(doc);

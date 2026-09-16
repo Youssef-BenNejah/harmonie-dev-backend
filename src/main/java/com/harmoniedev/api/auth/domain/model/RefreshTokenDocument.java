@@ -25,6 +25,8 @@ public class RefreshTokenDocument {
 	private Instant expiresAt;
 	@Default
 	private boolean revoked = false;
+	@Default
+	private boolean rememberMe = false;
 	@CreatedDate
 	private Instant createdAt;
 }

@@ -20,4 +20,7 @@ public class LoginRequest {
 
 	@NotBlank
 	private String password;
+
+	/** When true, the refresh cookie persists across browser restarts; otherwise it's a session cookie. */
+	private boolean rememberMe;
 }

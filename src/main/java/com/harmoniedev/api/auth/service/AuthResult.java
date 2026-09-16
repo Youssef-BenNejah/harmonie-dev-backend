@@ -12,4 +12,5 @@ public class AuthResult {
 	private final String accessToken;
 	private final String refreshToken;
 	private final UserResponse user;
+	private final boolean rememberMe;
 }
