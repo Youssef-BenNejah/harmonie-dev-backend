@@ -15,6 +15,7 @@ import com.harmoniedev.api.invoice.domain.model.InvoiceItemDocument;
 import com.harmoniedev.api.invoice.repository.InvoiceRepository;
 import com.harmoniedev.api.mail.MailService;
 import com.harmoniedev.api.pdf.InvoicePdfService;
+import com.harmoniedev.api.plan.service.PlanUsageService;
 import com.harmoniedev.api.tax.domain.model.TaxDocument;
 import com.harmoniedev.api.tax.repository.TaxRepository;
 import java.time.LocalDate;
@@ -34,6 +35,7 @@ public class InvoiceService {
 	private final CompanyService companyService;
 	private final InvoicePdfService invoicePdfService;
 	private final MailService mailService;
+	private final PlanUsageService planUsageService;
 
 	public InvoiceService(
 			InvoiceRepository repository,
@@ -42,7 +44,8 @@ public class InvoiceService {
 			TaxRepository taxRepository,
 			CompanyService companyService,
 			InvoicePdfService invoicePdfService,
-			MailService mailService) {
+			MailService mailService,
+			PlanUsageService planUsageService) {
 		this.repository = repository;
 		this.clientService = clientService;
 		this.currencyService = currencyService;
@@ -50,9 +53,11 @@ public class InvoiceService {
 		this.companyService = companyService;
 		this.invoicePdfService = invoicePdfService;
 		this.mailService = mailService;
+		this.planUsageService = planUsageService;
 	}
 
 	public InvoiceResponse create(InvoiceRequest request, String actorId) {
+		planUsageService.assertCanCreateInvoice(actorId);
 		String type = request.getType() != null && !request.getType().isBlank() ? request.getType() : "Standard";
 		int year = Year.parse(request.getDate().substring(0, 4)).getValue();
 
@@ -129,6 +134,7 @@ public class InvoiceService {
 
 	public InvoiceResponse duplicate(String id) {
 		InvoiceDocument source = findOrThrow(id);
+		planUsageService.assertCanCreateInvoice(source.getCreatedBy());
 		InvoiceDocument copy = InvoiceDocument.builder()
 				.clientId(source.getClientId())
 				.currencyId(source.getCurrencyId())
@@ -174,6 +180,7 @@ public class InvoiceService {
 		if (!"Proforma".equals(source.getType())) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only a Proforma invoice can be converted");
 		}
+		planUsageService.assertCanCreateInvoice(source.getCreatedBy());
 		source.setConverted(true);
 		repository.save(source);
 

@@ -23,6 +23,7 @@ public class UserResponse {
 	private Role role;
 	private AccountStatus status;
 	private Instant planExpiresAt;
+	private String planId;
 	private boolean renewalRequested;
 	private Instant createdAt;
 }

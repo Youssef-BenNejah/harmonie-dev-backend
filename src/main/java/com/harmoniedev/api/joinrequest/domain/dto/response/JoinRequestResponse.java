@@ -21,6 +21,8 @@ public class JoinRequestResponse {
 	private String telephone;
 	private String entreprise;
 	private String message;
+	private String requestedPlanId;
+	private String requestedPlanNom;
 	private JoinRequestStatus status;
 	private Instant createdAt;
 }

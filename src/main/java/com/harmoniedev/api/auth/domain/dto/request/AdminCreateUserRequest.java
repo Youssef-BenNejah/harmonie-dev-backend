@@ -29,4 +29,7 @@ public class AdminCreateUserRequest {
 	private AccountStatus status;
 
 	private Instant planExpiresAt;
+
+	/** Super Admin picks a plan when creating a tenant; null falls back to the seeded free-trial plan. */
+	private String planId;
 }

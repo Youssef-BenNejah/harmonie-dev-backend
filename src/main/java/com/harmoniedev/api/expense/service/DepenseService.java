@@ -4,6 +4,7 @@ import com.harmoniedev.api.expense.domain.dto.request.DepenseRequest;
 import com.harmoniedev.api.expense.domain.dto.response.DepenseResponse;
 import com.harmoniedev.api.expense.domain.model.DepenseDocument;
 import com.harmoniedev.api.expense.repository.DepenseRepository;
+import com.harmoniedev.api.plan.service.PlanUsageService;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -12,12 +13,15 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class DepenseService {
 	private final DepenseRepository repository;
+	private final PlanUsageService planUsageService;
 
-	public DepenseService(DepenseRepository repository) {
+	public DepenseService(DepenseRepository repository, PlanUsageService planUsageService) {
 		this.repository = repository;
+		this.planUsageService = planUsageService;
 	}
 
 	public DepenseResponse create(DepenseRequest request, String actorId) {
+		planUsageService.assertExpensesEnabled(actorId);
 		DepenseDocument doc = DepenseDocument.builder()
 				.name(request.getName())
 				.currency(request.getCurrency())

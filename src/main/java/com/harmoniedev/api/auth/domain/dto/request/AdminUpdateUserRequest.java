@@ -24,4 +24,7 @@ public class AdminUpdateUserRequest {
 	private AccountStatus status;
 
 	private Instant planExpiresAt;
+
+	/** Super Admin re-assigns the tenant's plan; null leaves the current plan unchanged. */
+	private String planId;
 }

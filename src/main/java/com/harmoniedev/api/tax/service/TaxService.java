@@ -3,6 +3,7 @@ package com.harmoniedev.api.tax.service;
 import com.harmoniedev.api.tax.domain.dto.request.TaxRequest;
 import com.harmoniedev.api.tax.domain.dto.response.TaxResponse;
 import com.harmoniedev.api.tax.domain.model.TaxDocument;
+import com.harmoniedev.api.plan.service.PlanUsageService;
 import com.harmoniedev.api.tax.repository.TaxRepository;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -12,12 +13,15 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class TaxService {
 	private final TaxRepository repository;
+	private final PlanUsageService planUsageService;
 
-	public TaxService(TaxRepository repository) {
+	public TaxService(TaxRepository repository, PlanUsageService planUsageService) {
 		this.repository = repository;
+		this.planUsageService = planUsageService;
 	}
 
 	public TaxResponse create(TaxRequest request, String actorId) {
+		planUsageService.assertCanCreateCustomTax(actorId, request.isDefaultTax());
 		if (request.isDefaultTax()) {
 			clearExistingDefault();
 		}

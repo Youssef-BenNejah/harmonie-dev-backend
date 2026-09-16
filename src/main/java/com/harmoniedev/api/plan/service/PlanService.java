@@ -26,6 +26,9 @@ public class PlanService {
 	}
 
 	public PlanResponse create(PlanRequest request) {
+		if (request.isFreeTrial()) {
+			clearExistingFreeTrial();
+		}
 		PlanDocument doc = PlanDocument.builder()
 				.nom(request.getNom())
 				.tagline(request.getTagline())
@@ -33,6 +36,16 @@ public class PlanService {
 				.prixAnnuel(request.getPrixAnnuel())
 				.populaire(request.isPopulaire())
 				.fonctionnalites(request.getFonctionnalites() != null ? request.getFonctionnalites() : List.of())
+				.isFreeTrial(request.isFreeTrial())
+				.trialDurationDays(request.getTrialDurationDays())
+				.maxInvoicesPerMonth(request.getMaxInvoicesPerMonth())
+				.maxClients(request.getMaxClients())
+				.maxProducts(request.getMaxProducts())
+				.maxCustomTaxes(request.getMaxCustomTaxes())
+				.multiCurrency(request.isMultiCurrency())
+				.reportsAccess(request.isReportsAccess())
+				.expensesEnabled(request.isExpensesEnabled())
+				.bulkExportEnabled(request.isBulkExportEnabled())
 				.build();
 		repository.save(doc);
 		return toResponse(doc);
@@ -40,12 +53,25 @@ public class PlanService {
 
 	public PlanResponse update(String id, PlanRequest request) {
 		PlanDocument doc = findOrThrow(id);
+		if (request.isFreeTrial() && !doc.isFreeTrial()) {
+			clearExistingFreeTrial();
+		}
 		doc.setNom(request.getNom());
 		doc.setTagline(request.getTagline());
 		doc.setPrixMensuel(request.getPrixMensuel());
 		doc.setPrixAnnuel(request.getPrixAnnuel());
 		doc.setPopulaire(request.isPopulaire());
 		doc.setFonctionnalites(request.getFonctionnalites() != null ? request.getFonctionnalites() : List.of());
+		doc.setFreeTrial(request.isFreeTrial());
+		doc.setTrialDurationDays(request.getTrialDurationDays());
+		doc.setMaxInvoicesPerMonth(request.getMaxInvoicesPerMonth());
+		doc.setMaxClients(request.getMaxClients());
+		doc.setMaxProducts(request.getMaxProducts());
+		doc.setMaxCustomTaxes(request.getMaxCustomTaxes());
+		doc.setMultiCurrency(request.isMultiCurrency());
+		doc.setReportsAccess(request.isReportsAccess());
+		doc.setExpensesEnabled(request.isExpensesEnabled());
+		doc.setBulkExportEnabled(request.isBulkExportEnabled());
 		repository.save(doc);
 		return toResponse(doc);
 	}
@@ -55,6 +81,15 @@ public class PlanService {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Plan not found");
 		}
 		repository.deleteById(id);
+	}
+
+	private void clearExistingFreeTrial() {
+		repository.findAll().stream()
+				.filter(PlanDocument::isFreeTrial)
+				.forEach(p -> {
+					p.setFreeTrial(false);
+					repository.save(p);
+				});
 	}
 
 	private PlanDocument findOrThrow(String id) {
@@ -71,6 +106,16 @@ public class PlanService {
 				.prixAnnuel(doc.getPrixAnnuel())
 				.populaire(doc.isPopulaire())
 				.fonctionnalites(doc.getFonctionnalites())
+				.isFreeTrial(doc.isFreeTrial())
+				.trialDurationDays(doc.getTrialDurationDays())
+				.maxInvoicesPerMonth(doc.getMaxInvoicesPerMonth())
+				.maxClients(doc.getMaxClients())
+				.maxProducts(doc.getMaxProducts())
+				.maxCustomTaxes(doc.getMaxCustomTaxes())
+				.multiCurrency(doc.isMultiCurrency())
+				.reportsAccess(doc.isReportsAccess())
+				.expensesEnabled(doc.isExpensesEnabled())
+				.bulkExportEnabled(doc.isBulkExportEnabled())
 				.build();
 	}
 }

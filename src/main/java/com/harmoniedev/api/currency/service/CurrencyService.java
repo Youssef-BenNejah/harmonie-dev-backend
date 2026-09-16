@@ -4,6 +4,7 @@ import com.harmoniedev.api.currency.domain.dto.request.CurrencyRequest;
 import com.harmoniedev.api.currency.domain.dto.response.CurrencyResponse;
 import com.harmoniedev.api.currency.domain.model.CurrencyDocument;
 import com.harmoniedev.api.currency.repository.CurrencyRepository;
+import com.harmoniedev.api.plan.service.PlanUsageService;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -12,12 +13,15 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class CurrencyService {
 	private final CurrencyRepository repository;
+	private final PlanUsageService planUsageService;
 
-	public CurrencyService(CurrencyRepository repository) {
+	public CurrencyService(CurrencyRepository repository, PlanUsageService planUsageService) {
 		this.repository = repository;
+		this.planUsageService = planUsageService;
 	}
 
 	public CurrencyResponse create(CurrencyRequest request, String actorId) {
+		planUsageService.assertCanCreateCurrency(actorId);
 		CurrencyDocument doc = CurrencyDocument.builder()
 				.code(request.getCode().toUpperCase())
 				.name(request.getName())

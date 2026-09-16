@@ -27,6 +27,10 @@ public class JoinRequestDocument {
 	private String telephone;
 	private String entreprise;
 	private String message;
+
+	/** The plan the prospect picked on the public landing page — a hint for Super Admin, not binding. */
+	private String requestedPlanId;
+
 	@Default
 	private JoinRequestStatus status = JoinRequestStatus.PENDING;
 	@CreatedDate

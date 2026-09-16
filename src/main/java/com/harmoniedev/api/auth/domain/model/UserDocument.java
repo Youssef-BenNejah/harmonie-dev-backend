@@ -32,6 +32,7 @@ public class UserDocument {
 	@Default
 	private AccountStatus status = AccountStatus.ACTIVE;
 	private Instant planExpiresAt;
+	private String planId;
 	@Default
 	private boolean renewalRequested = false;
 	@Default

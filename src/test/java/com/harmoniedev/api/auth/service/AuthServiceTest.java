@@ -64,6 +64,8 @@ class AuthServiceTest {
 	private com.harmoniedev.api.storage.CloudinaryService cloudinaryService;
 	@Mock
 	private com.harmoniedev.api.notification.service.NotificationService notificationService;
+	@Mock
+	private com.harmoniedev.api.plan.repository.PlanRepository planRepository;
 
 	private AuthService authService;
 
@@ -80,7 +82,8 @@ class AuthServiceTest {
 				mailService,
 				redisTemplate,
 				cloudinaryService,
-				notificationService);
+				notificationService,
+				planRepository);
 	}
 
 	@Test
@@ -92,6 +95,7 @@ class AuthServiceTest {
 
 		when(userRepository.existsByEmail("test@example.com")).thenReturn(false);
 		when(passwordEncoder.encode("Aa1!aaaa")).thenReturn("hashed");
+		when(planRepository.findByIsFreeTrialTrue()).thenReturn(Optional.empty());
 		when(userRepository.save(any(UserDocument.class))).thenAnswer(invocation -> {
 			UserDocument saved = invocation.getArgument(0);
 			saved.setId("user-1");

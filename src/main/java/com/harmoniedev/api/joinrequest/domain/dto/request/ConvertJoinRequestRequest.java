@@ -13,4 +13,7 @@ import lombok.Setter;
 @Builder
 public class ConvertJoinRequestRequest {
 	private Integer trialDays;
+
+	/** Overrides the request's requestedPlanId — Super Admin can pick a different plan at conversion time. */
+	private String planId;
 }

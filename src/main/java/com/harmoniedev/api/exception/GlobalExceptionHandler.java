@@ -26,6 +26,15 @@ public class GlobalExceptionHandler {
 		return ResponseEntity.status(ex.getStatusCode()).body(problem);
 	}
 
+	@ExceptionHandler(PlanLimitExceededException.class)
+	public ResponseEntity<ProblemDetail> handlePlanLimit(PlanLimitExceededException ex, HttpServletRequest request) {
+		ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.PAYMENT_REQUIRED, ex.getMessage());
+		problem.setTitle("Limite du plan atteinte");
+		problem.setType(URI.create("https://yourapp.com/errors/plan-limit"));
+		problem.setInstance(URI.create(request.getRequestURI()));
+		return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED).body(problem);
+	}
+
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	public ResponseEntity<ProblemDetail> handleValidation(MethodArgumentNotValidException ex, HttpServletRequest request) {
 		String detail = ex.getBindingResult().getFieldErrors().stream()

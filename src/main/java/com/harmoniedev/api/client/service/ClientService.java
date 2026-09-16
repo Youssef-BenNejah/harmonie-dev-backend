@@ -8,6 +8,7 @@ import com.harmoniedev.api.entreprise.domain.model.EntrepriseDocument;
 import com.harmoniedev.api.entreprise.repository.EntrepriseRepository;
 import com.harmoniedev.api.person.domain.model.PersonDocument;
 import com.harmoniedev.api.person.repository.PersonRepository;
+import com.harmoniedev.api.plan.service.PlanUsageService;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -18,14 +19,17 @@ public class ClientService {
 	private final ClientRepository clientRepository;
 	private final PersonRepository personRepository;
 	private final EntrepriseRepository entrepriseRepository;
+	private final PlanUsageService planUsageService;
 
 	public ClientService(
 			ClientRepository clientRepository,
 			PersonRepository personRepository,
-			EntrepriseRepository entrepriseRepository) {
+			EntrepriseRepository entrepriseRepository,
+			PlanUsageService planUsageService) {
 		this.clientRepository = clientRepository;
 		this.personRepository = personRepository;
 		this.entrepriseRepository = entrepriseRepository;
+		this.planUsageService = planUsageService;
 	}
 
 	/** Flags the Person as a client and creates the wrapping Client record from a snapshot of it. */
@@ -75,6 +79,7 @@ public class ClientService {
 
 	/** Generic entry point behind `POST /clients` — creates from an existing Person or Entreprise. */
 	public ClientResponse create(ClientType type, String personId, String entrepriseId, String actorId) {
+		planUsageService.assertCanCreateClient(actorId);
 		if (type == ClientType.PERSON) {
 			if (personId == null || personId.isBlank()) {
 				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "personId is required for type=PERSON");

@@ -17,6 +17,8 @@ import com.harmoniedev.api.auth.repository.UserRepository;
 import com.harmoniedev.api.config.SecurityProperties;
 import com.harmoniedev.api.mail.MailService;
 import com.harmoniedev.api.notification.service.NotificationService;
+import com.harmoniedev.api.plan.domain.model.PlanDocument;
+import com.harmoniedev.api.plan.repository.PlanRepository;
 import com.harmoniedev.api.security.JwtTokenProvider;
 import com.harmoniedev.api.security.TokenBlacklistService;
 import com.harmoniedev.api.storage.CloudinaryService;
@@ -59,6 +61,7 @@ public class AuthService {
 	private final StringRedisTemplate redisTemplate;
 	private final CloudinaryService cloudinaryService;
 	private final NotificationService notificationService;
+	private final PlanRepository planRepository;
 
 	public AuthService(
 			UserRepository userRepository,
@@ -71,7 +74,8 @@ public class AuthService {
 			MailService mailService,
 			StringRedisTemplate redisTemplate,
 			CloudinaryService cloudinaryService,
-			NotificationService notificationService) {
+			NotificationService notificationService,
+			PlanRepository planRepository) {
 		this.userRepository = userRepository;
 		this.refreshTokenRepository = refreshTokenRepository;
 		this.passwordEncoder = passwordEncoder;
@@ -83,6 +87,7 @@ public class AuthService {
 		this.redisTemplate = redisTemplate;
 		this.cloudinaryService = cloudinaryService;
 		this.notificationService = notificationService;
+		this.planRepository = planRepository;
 	}
 
 	public UserResponse register(RegisterRequest request, String ipAddress, String userAgent) {
@@ -90,14 +95,24 @@ public class AuthService {
 		if (userRepository.existsByEmail(email)) {
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already registered");
 		}
+		PlanDocument trialPlan = freeTrialPlan();
 		UserDocument user = UserDocument.builder()
 				.email(email)
 				.passwordHash(passwordEncoder.encode(request.getPassword()))
 				.role(Role.USER)
+				.planId(trialPlan != null ? trialPlan.getId() : null)
+				.planExpiresAt(trialPlan != null && trialPlan.getTrialDurationDays() != null
+						? Instant.now().plus(trialPlan.getTrialDurationDays(), java.time.temporal.ChronoUnit.DAYS)
+						: null)
 				.build();
 		userRepository.save(user);
 		auditService.log(user.getId(), AuditAction.REGISTER, ipAddress, userAgent);
 		return toUserResponse(user);
+	}
+
+	/** The single plan flagged isFreeTrial=true, auto-assigned to brand-new tenants. May be absent if Super Admin removed it. */
+	private PlanDocument freeTrialPlan() {
+		return planRepository.findByIsFreeTrialTrue().orElse(null);
 	}
 
 	public AuthResult login(LoginRequest request, String ipAddress, String userAgent) {
@@ -198,6 +213,15 @@ public class AuthService {
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already registered");
 		}
 		String rawPassword = generateRandomPassword();
+		PlanDocument plan = request.getPlanId() != null && !request.getPlanId().isBlank()
+				? planRepository.findById(request.getPlanId())
+						.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Plan not found"))
+				: freeTrialPlan();
+		Instant planExpiresAt = request.getPlanExpiresAt() != null
+				? request.getPlanExpiresAt()
+				: (plan != null && plan.isFreeTrial() && plan.getTrialDurationDays() != null
+						? Instant.now().plus(plan.getTrialDurationDays(), java.time.temporal.ChronoUnit.DAYS)
+						: null);
 		UserDocument user = UserDocument.builder()
 				.email(email)
 				.passwordHash(passwordEncoder.encode(rawPassword))
@@ -205,7 +229,8 @@ public class AuthService {
 				.firstName(request.getFirstName())
 				.lastName(request.getLastName())
 				.status(request.getStatus() != null ? request.getStatus() : AccountStatus.ACTIVE)
-				.planExpiresAt(request.getPlanExpiresAt())
+				.planId(plan != null ? plan.getId() : null)
+				.planExpiresAt(planExpiresAt)
 				.build();
 		userRepository.save(user);
 		auditService.log(actorId, AuditAction.ADMIN_CREATE_USER, ipAddress, userAgent);
@@ -244,6 +269,11 @@ public class AuthService {
 			user.setStatus(request.getStatus());
 		}
 		user.setPlanExpiresAt(request.getPlanExpiresAt());
+		if (request.getPlanId() != null && !request.getPlanId().isBlank()) {
+			planRepository.findById(request.getPlanId())
+					.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Plan not found"));
+			user.setPlanId(request.getPlanId());
+		}
 		userRepository.save(user);
 		auditService.log(actorId, AuditAction.ADMIN_UPDATE_USER, ipAddress, userAgent);
 		return toUserResponse(user);
@@ -431,6 +461,7 @@ public class AuthService {
 				.role(user.getRole())
 				.status(user.getStatus())
 				.planExpiresAt(user.getPlanExpiresAt())
+				.planId(user.getPlanId())
 				.renewalRequested(user.isRenewalRequested())
 				.createdAt(user.getCreatedAt())
 				.build();

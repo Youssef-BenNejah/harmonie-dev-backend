@@ -20,4 +20,17 @@ public class PlanResponse {
 	private double prixAnnuel;
 	private boolean populaire;
 	private List<String> fonctionnalites;
+
+	private boolean isFreeTrial;
+	private Integer trialDurationDays;
+
+	private Integer maxInvoicesPerMonth;
+	private Integer maxClients;
+	private Integer maxProducts;
+	private Integer maxCustomTaxes;
+
+	private boolean multiCurrency;
+	private boolean reportsAccess;
+	private boolean expensesEnabled;
+	private boolean bulkExportEnabled;
 }

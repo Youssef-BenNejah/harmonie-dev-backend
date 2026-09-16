@@ -31,4 +31,7 @@ public class CreateJoinRequestRequest {
 	private String entreprise;
 
 	private String message;
+
+	/** id of the Plan the prospect selected on the landing page's pricing section. */
+	private String requestedPlanId;
 }

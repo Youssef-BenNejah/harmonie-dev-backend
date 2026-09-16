@@ -61,8 +61,9 @@ public class JoinRequestController {
 			HttpServletRequest httpRequest) {
 		AuthenticatedUser principal = (AuthenticatedUser) authentication.getPrincipal();
 		Integer trialDays = request != null ? request.getTrialDays() : null;
+		String planId = request != null ? request.getPlanId() : null;
 		UserResponse user = joinRequestService.convert(
-				id, trialDays, principal.getId(), resolveClientIp(httpRequest), httpRequest.getHeader("User-Agent"));
+				id, trialDays, planId, principal.getId(), resolveClientIp(httpRequest), httpRequest.getHeader("User-Agent"));
 		return ResponseEntity.ok(ApiResponse.success("Converted — credentials sent by e-mail", user));
 	}
 

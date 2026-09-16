@@ -11,6 +11,8 @@ import com.harmoniedev.api.joinrequest.domain.enums.JoinRequestStatus;
 import com.harmoniedev.api.joinrequest.domain.model.JoinRequestDocument;
 import com.harmoniedev.api.joinrequest.repository.JoinRequestRepository;
 import com.harmoniedev.api.notification.service.NotificationService;
+import com.harmoniedev.api.plan.domain.model.PlanDocument;
+import com.harmoniedev.api.plan.repository.PlanRepository;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -26,16 +28,19 @@ public class JoinRequestService {
 	private final AuthService authService;
 	private final AuditService auditService;
 	private final NotificationService notificationService;
+	private final PlanRepository planRepository;
 
 	public JoinRequestService(
 			JoinRequestRepository repository,
 			AuthService authService,
 			AuditService auditService,
-			NotificationService notificationService) {
+			NotificationService notificationService,
+			PlanRepository planRepository) {
 		this.repository = repository;
 		this.authService = authService;
 		this.auditService = auditService;
 		this.notificationService = notificationService;
+		this.planRepository = planRepository;
 	}
 
 	public JoinRequestResponse submit(CreateJoinRequestRequest request, String ipAddress, String userAgent) {
@@ -46,6 +51,7 @@ public class JoinRequestService {
 				.telephone(request.getTelephone())
 				.entreprise(request.getEntreprise())
 				.message(request.getMessage())
+				.requestedPlanId(request.getRequestedPlanId())
 				.status(JoinRequestStatus.PENDING)
 				.build();
 		repository.save(doc);
@@ -79,17 +85,20 @@ public class JoinRequestService {
 	 * Converts an accepted join request into a real tenant account: creates the User (via
 	 * {@link AuthService}, which e-mails the generated credentials) and marks the request converted.
 	 */
-	public UserResponse convert(String id, Integer trialDays, String actorId, String ipAddress, String userAgent) {
+	public UserResponse convert(
+			String id, Integer trialDays, String planIdOverride, String actorId, String ipAddress, String userAgent) {
 		JoinRequestDocument doc = findOrThrow(id);
 		if (doc.getStatus() == JoinRequestStatus.CONVERTED) {
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "Join request already converted");
 		}
 		int days = trialDays != null ? trialDays : DEFAULT_TRIAL_DAYS;
+		String resolvedPlanId = planIdOverride != null && !planIdOverride.isBlank() ? planIdOverride : doc.getRequestedPlanId();
 		AdminCreateUserRequest createRequest = AdminCreateUserRequest.builder()
 				.email(doc.getEmail())
 				.firstName(doc.getPrenom())
 				.lastName(doc.getNom())
 				.planExpiresAt(Instant.now().plus(days, ChronoUnit.DAYS))
+				.planId(resolvedPlanId)
 				.build();
 		UserResponse user = authService.createUserByAdmin(createRequest, actorId, ipAddress, userAgent);
 		doc.setStatus(JoinRequestStatus.CONVERTED);
@@ -104,6 +113,9 @@ public class JoinRequestService {
 	}
 
 	private JoinRequestResponse toResponse(JoinRequestDocument doc) {
+		PlanDocument plan = doc.getRequestedPlanId() != null && !doc.getRequestedPlanId().isBlank()
+				? planRepository.findById(doc.getRequestedPlanId()).orElse(null)
+				: null;
 		return JoinRequestResponse.builder()
 				.id(doc.getId())
 				.nom(doc.getNom())
@@ -112,6 +124,8 @@ public class JoinRequestService {
 				.telephone(doc.getTelephone())
 				.entreprise(doc.getEntreprise())
 				.message(doc.getMessage())
+				.requestedPlanId(doc.getRequestedPlanId())
+				.requestedPlanNom(plan != null ? plan.getNom() : null)
 				.status(doc.getStatus())
 				.createdAt(doc.getCreatedAt())
 				.build();

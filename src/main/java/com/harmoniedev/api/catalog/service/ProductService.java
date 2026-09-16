@@ -4,6 +4,7 @@ import com.harmoniedev.api.catalog.domain.dto.request.ProductRequest;
 import com.harmoniedev.api.catalog.domain.dto.response.ProductResponse;
 import com.harmoniedev.api.catalog.domain.model.ProductDocument;
 import com.harmoniedev.api.catalog.repository.ProductRepository;
+import com.harmoniedev.api.plan.service.PlanUsageService;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -12,12 +13,15 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class ProductService {
 	private final ProductRepository repository;
+	private final PlanUsageService planUsageService;
 
-	public ProductService(ProductRepository repository) {
+	public ProductService(ProductRepository repository, PlanUsageService planUsageService) {
 		this.repository = repository;
+		this.planUsageService = planUsageService;
 	}
 
 	public ProductResponse create(ProductRequest request, String actorId) {
+		planUsageService.assertCanCreateProduct(actorId);
 		ProductDocument doc = ProductDocument.builder()
 				.name(request.getName())
 				.currency(request.getCurrency())

@@ -7,6 +7,7 @@ import com.harmoniedev.api.invoice.domain.dto.response.InvoiceResponse;
 import com.harmoniedev.api.invoice.service.InvoiceService;
 import com.harmoniedev.api.payment.domain.dto.response.PaymentResponse;
 import com.harmoniedev.api.payment.service.PaymentService;
+import com.harmoniedev.api.plan.service.PlanUsageService;
 import com.harmoniedev.api.security.AuthenticatedUser;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -29,10 +30,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class InvoiceController {
 	private final InvoiceService service;
 	private final PaymentService paymentService;
+	private final PlanUsageService planUsageService;
 
-	public InvoiceController(InvoiceService service, PaymentService paymentService) {
+	public InvoiceController(InvoiceService service, PaymentService paymentService, PlanUsageService planUsageService) {
 		this.service = service;
 		this.paymentService = paymentService;
+		this.planUsageService = planUsageService;
 	}
 
 	@PostMapping
@@ -107,7 +110,9 @@ public class InvoiceController {
 	}
 
 	@GetMapping("/export/zip")
-	public ResponseEntity<byte[]> exportZip(@RequestParam(required = false) List<String> ids) {
+	public ResponseEntity<byte[]> exportZip(@RequestParam(required = false) List<String> ids, Authentication authentication) {
+		String actorId = ((AuthenticatedUser) authentication.getPrincipal()).getId();
+		planUsageService.assertBulkExportEnabled(actorId);
 		byte[] zip = service.renderZip(ids);
 		return ResponseEntity.ok()
 				.contentType(MediaType.valueOf("application/zip"))
