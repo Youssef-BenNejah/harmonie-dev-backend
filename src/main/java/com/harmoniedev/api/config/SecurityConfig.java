@@ -75,7 +75,11 @@ public class SecurityConfig {
 	@Bean
 	public CorsConfigurationSource corsConfigurationSource(SecurityProperties properties) {
 		CorsConfiguration config = new CorsConfiguration();
-		config.setAllowedOrigins(properties.getAllowedOrigins());
+		// Dev-only: reflects whatever Origin the browser sends instead of checking against
+		// ALLOWED_ORIGINS, so devtunnels URLs (which change every session) always work without
+		// editing .env. setAllowedOriginPatterns (not setAllowedOrigins) is required here because
+		// allowCredentials(true) below forbids the literal "*" value with setAllowedOrigins.
+		config.setAllowedOriginPatterns(List.of("*"));
 		config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 		config.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With"));
 		config.setAllowCredentials(true);
