@@ -35,8 +35,9 @@ public class CurrencyController {
 	}
 
 	@GetMapping
-	public ResponseEntity<ApiResponse<List<CurrencyResponse>>> list() {
-		return ResponseEntity.ok(ApiResponse.success("Currencies", service.list()));
+	public ResponseEntity<ApiResponse<List<CurrencyResponse>>> list(Authentication authentication) {
+		String actorId = ((AuthenticatedUser) authentication.getPrincipal()).getId();
+		return ResponseEntity.ok(ApiResponse.success("Currencies", service.list(actorId)));
 	}
 
 	@GetMapping("/{id}")

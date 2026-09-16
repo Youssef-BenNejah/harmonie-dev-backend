@@ -32,8 +32,8 @@ public class CurrencyService {
 		return toResponse(doc);
 	}
 
-	public List<CurrencyResponse> list() {
-		return repository.findAll().stream().map(this::toResponse).toList();
+	public List<CurrencyResponse> list(String actorId) {
+		return repository.findByCreatedBy(actorId).stream().map(this::toResponse).toList();
 	}
 
 	public CurrencyResponse get(String id) {

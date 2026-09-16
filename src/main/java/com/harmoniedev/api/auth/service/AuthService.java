@@ -16,6 +16,8 @@ import com.harmoniedev.api.auth.repository.RefreshTokenRepository;
 import com.harmoniedev.api.auth.repository.UserRepository;
 import com.harmoniedev.api.config.SecurityProperties;
 import com.harmoniedev.api.mail.MailService;
+import com.harmoniedev.api.currency.domain.model.CurrencyDocument;
+import com.harmoniedev.api.currency.repository.CurrencyRepository;
 import com.harmoniedev.api.notification.service.NotificationService;
 import com.harmoniedev.api.plan.domain.model.PlanDocument;
 import com.harmoniedev.api.plan.repository.PlanRepository;
@@ -62,6 +64,7 @@ public class AuthService {
 	private final CloudinaryService cloudinaryService;
 	private final NotificationService notificationService;
 	private final PlanRepository planRepository;
+	private final CurrencyRepository currencyRepository;
 
 	public AuthService(
 			UserRepository userRepository,
@@ -75,7 +78,8 @@ public class AuthService {
 			StringRedisTemplate redisTemplate,
 			CloudinaryService cloudinaryService,
 			NotificationService notificationService,
-			PlanRepository planRepository) {
+			PlanRepository planRepository,
+			CurrencyRepository currencyRepository) {
 		this.userRepository = userRepository;
 		this.refreshTokenRepository = refreshTokenRepository;
 		this.passwordEncoder = passwordEncoder;
@@ -88,6 +92,17 @@ public class AuthService {
 		this.cloudinaryService = cloudinaryService;
 		this.notificationService = notificationService;
 		this.planRepository = planRepository;
+		this.currencyRepository = currencyRepository;
+	}
+
+	/** Every new tenant starts with a usable default currency — otherwise invoicing has nothing to select. */
+	private void seedDefaultCurrency(String userId) {
+		currencyRepository.save(CurrencyDocument.builder()
+				.code("TND")
+				.name("Dinar tunisien")
+				.symbol("DT")
+				.createdBy(userId)
+				.build());
 	}
 
 	public UserResponse register(RegisterRequest request, String ipAddress, String userAgent) {
@@ -106,6 +121,7 @@ public class AuthService {
 						: null)
 				.build();
 		userRepository.save(user);
+		seedDefaultCurrency(user.getId());
 		auditService.log(user.getId(), AuditAction.REGISTER, ipAddress, userAgent);
 		return toUserResponse(user);
 	}
@@ -233,6 +249,7 @@ public class AuthService {
 				.planExpiresAt(planExpiresAt)
 				.build();
 		userRepository.save(user);
+		seedDefaultCurrency(user.getId());
 		auditService.log(actorId, AuditAction.ADMIN_CREATE_USER, ipAddress, userAgent);
 		mailService.sendWelcomeEmail(email, request.getFirstName(), rawPassword);
 		return toUserResponse(user);

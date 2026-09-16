@@ -66,6 +66,8 @@ class AuthServiceTest {
 	private com.harmoniedev.api.notification.service.NotificationService notificationService;
 	@Mock
 	private com.harmoniedev.api.plan.repository.PlanRepository planRepository;
+	@Mock
+	private com.harmoniedev.api.currency.repository.CurrencyRepository currencyRepository;
 
 	private AuthService authService;
 
@@ -83,7 +85,8 @@ class AuthServiceTest {
 				redisTemplate,
 				cloudinaryService,
 				notificationService,
-				planRepository);
+				planRepository,
+				currencyRepository);
 	}
 
 	@Test
