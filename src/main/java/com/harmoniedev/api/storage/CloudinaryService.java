@@ -18,6 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class CloudinaryService {
 	private static final String ROOT_FOLDER = "harmonie-dev";
 	private static final long MAX_SIZE_BYTES = 5L * 1024 * 1024;
+	private static final long MAX_DOCUMENT_SIZE_BYTES = 8L * 1024 * 1024;
 
 	private final Cloudinary cloudinary;
 
@@ -39,6 +40,37 @@ public class CloudinaryService {
 		}
 		if (file.getSize() > MAX_SIZE_BYTES) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File exceeds the 5 MB limit");
+		}
+		try {
+			Map<?, ?> result = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap(
+					"folder", ROOT_FOLDER + "/" + folder,
+					"public_id", publicId,
+					"overwrite", true,
+					"invalidate", true,
+					"resource_type", "image"));
+			return new CloudinaryUploadResult((String) result.get("secure_url"), (String) result.get("public_id"));
+		} catch (IOException ex) {
+			throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Failed to upload file to Cloudinary", ex);
+		}
+	}
+
+	/**
+	 * Like {@link #uploadImage}, but also accepts a PDF (for a scanned invoice/receipt) — Cloudinary
+	 * serves either back from the same "image" resource type, so the frontend can render an
+	 * <img>/<iframe> straight off the returned URL without knowing which one it got.
+	 */
+	public CloudinaryUploadResult uploadDocument(MultipartFile file, String folder, String publicId) {
+		if (file == null || file.isEmpty()) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File is required");
+		}
+		String contentType = file.getContentType();
+		boolean isImage = contentType != null && contentType.startsWith("image/");
+		boolean isPdf = "application/pdf".equals(contentType);
+		if (!isImage && !isPdf) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only image or PDF files are allowed");
+		}
+		if (file.getSize() > MAX_DOCUMENT_SIZE_BYTES) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File exceeds the 8 MB limit");
 		}
 		try {
 			Map<?, ?> result = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap(

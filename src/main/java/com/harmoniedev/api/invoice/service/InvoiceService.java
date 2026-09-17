@@ -12,6 +12,7 @@ import com.harmoniedev.api.invoice.domain.dto.request.InvoiceImportRequest;
 import com.harmoniedev.api.invoice.domain.dto.request.InvoiceImportRowRequest;
 import com.harmoniedev.api.invoice.domain.dto.request.InvoiceItemRequest;
 import com.harmoniedev.api.invoice.domain.dto.request.InvoiceRequest;
+import com.harmoniedev.api.invoice.domain.dto.response.DocumentUploadResponse;
 import com.harmoniedev.api.invoice.domain.dto.response.InvoiceImportResponse;
 import com.harmoniedev.api.invoice.domain.dto.response.InvoiceImportRowResult;
 import com.harmoniedev.api.invoice.domain.dto.response.InvoiceItemResponse;
@@ -22,6 +23,7 @@ import com.harmoniedev.api.invoice.repository.InvoiceRepository;
 import com.harmoniedev.api.mail.MailService;
 import com.harmoniedev.api.pdf.InvoicePdfService;
 import com.harmoniedev.api.plan.service.PlanUsageService;
+import com.harmoniedev.api.storage.CloudinaryService;
 import com.harmoniedev.api.tax.domain.model.TaxDocument;
 import com.harmoniedev.api.tax.repository.TaxRepository;
 import java.time.LocalDate;
@@ -33,6 +35,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
@@ -48,6 +51,7 @@ public class InvoiceService {
 	private final InvoicePdfService invoicePdfService;
 	private final MailService mailService;
 	private final PlanUsageService planUsageService;
+	private final CloudinaryService cloudinaryService;
 
 	public InvoiceService(
 			InvoiceRepository repository,
@@ -58,7 +62,8 @@ public class InvoiceService {
 			CompanyService companyService,
 			InvoicePdfService invoicePdfService,
 			MailService mailService,
-			PlanUsageService planUsageService) {
+			PlanUsageService planUsageService,
+			CloudinaryService cloudinaryService) {
 		this.repository = repository;
 		this.clientService = clientService;
 		this.clientRepository = clientRepository;
@@ -68,6 +73,13 @@ public class InvoiceService {
 		this.invoicePdfService = invoicePdfService;
 		this.mailService = mailService;
 		this.planUsageService = planUsageService;
+		this.cloudinaryService = cloudinaryService;
+	}
+
+	/** Uploads a scanned invoice document (image or PDF) and returns its hosted URL. */
+	public DocumentUploadResponse uploadDocument(MultipartFile file, String actorId) {
+		var result = cloudinaryService.uploadDocument(file, "invoices/" + actorId, UUID.randomUUID().toString());
+		return DocumentUploadResponse.builder().url(result.url()).build();
 	}
 
 	public InvoiceResponse create(InvoiceRequest request, String actorId) {
@@ -195,6 +207,7 @@ public class InvoiceService {
 				.total(total)
 				.paidAmount(paid)
 				.createdBy(actorId)
+				.factureImage(row.getFactureImage())
 				.build();
 		repository.save(doc);
 		return InvoiceImportRowResult.builder().line(row.getLine()).success(true).invoiceId(doc.getId()).build();

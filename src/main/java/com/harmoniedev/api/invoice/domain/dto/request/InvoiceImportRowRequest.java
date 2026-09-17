@@ -43,4 +43,7 @@ public class InvoiceImportRowRequest {
 	private Integer numero;
 
 	private String note;
+
+	/** URL of the scanned document (image or PDF) previously uploaded via POST /invoices/documents. */
+	private String factureImage;
 }

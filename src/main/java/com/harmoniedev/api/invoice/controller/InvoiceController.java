@@ -4,6 +4,7 @@ import com.harmoniedev.api.common.dto.ApiResponse;
 import com.harmoniedev.api.invoice.domain.dto.request.InvoiceImportRequest;
 import com.harmoniedev.api.invoice.domain.dto.request.InvoiceRequest;
 import com.harmoniedev.api.invoice.domain.dto.request.SendInvoiceRequest;
+import com.harmoniedev.api.invoice.domain.dto.response.DocumentUploadResponse;
 import com.harmoniedev.api.invoice.domain.dto.response.InvoiceImportResponse;
 import com.harmoniedev.api.invoice.domain.dto.response.InvoiceResponse;
 import com.harmoniedev.api.invoice.service.InvoiceService;
@@ -26,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/v1/invoices")
@@ -45,6 +47,13 @@ public class InvoiceController {
 			@Valid @RequestBody InvoiceRequest request, Authentication authentication) {
 		String actorId = ((AuthenticatedUser) authentication.getPrincipal()).getId();
 		return ResponseEntity.ok(ApiResponse.success("Invoice created", service.create(request, actorId)));
+	}
+
+	@PostMapping("/documents")
+	public ResponseEntity<ApiResponse<DocumentUploadResponse>> uploadDocument(
+			@RequestParam("file") MultipartFile file, Authentication authentication) {
+		String actorId = ((AuthenticatedUser) authentication.getPrincipal()).getId();
+		return ResponseEntity.ok(ApiResponse.success("Document uploaded", service.uploadDocument(file, actorId)));
 	}
 
 	@PostMapping("/import")
