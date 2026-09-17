@@ -80,8 +80,11 @@ public class SecurityConfig {
 		// editing .env. setAllowedOriginPatterns (not setAllowedOrigins) is required here because
 		// allowCredentials(true) below forbids the literal "*" value with setAllowedOrigins.
 		config.setAllowedOriginPatterns(List.of("*"));
-		config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-		config.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With"));
+		config.setAllowedMethods(List.of("*"));
+		config.setAllowedHeaders(List.of("*"));
+		// Content-Disposition carries the filename for PDF/ZIP downloads — without exposing it,
+		// the frontend can't read it cross-origin (e.g. through a devtunnel).
+		config.setExposedHeaders(List.of("Content-Disposition"));
 		config.setAllowCredentials(true);
 		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 		source.registerCorsConfiguration("/**", config);
