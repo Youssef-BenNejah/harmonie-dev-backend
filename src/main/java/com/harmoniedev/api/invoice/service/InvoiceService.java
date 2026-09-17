@@ -1,13 +1,19 @@
 package com.harmoniedev.api.invoice.service;
 
 import com.harmoniedev.api.client.domain.dto.response.ClientResponse;
+import com.harmoniedev.api.client.domain.model.ClientDocument;
+import com.harmoniedev.api.client.repository.ClientRepository;
 import com.harmoniedev.api.client.service.ClientService;
 import com.harmoniedev.api.company.domain.dto.response.CompanyResponse;
 import com.harmoniedev.api.company.service.CompanyService;
 import com.harmoniedev.api.currency.domain.dto.response.CurrencyResponse;
 import com.harmoniedev.api.currency.service.CurrencyService;
+import com.harmoniedev.api.invoice.domain.dto.request.InvoiceImportRequest;
+import com.harmoniedev.api.invoice.domain.dto.request.InvoiceImportRowRequest;
 import com.harmoniedev.api.invoice.domain.dto.request.InvoiceItemRequest;
 import com.harmoniedev.api.invoice.domain.dto.request.InvoiceRequest;
+import com.harmoniedev.api.invoice.domain.dto.response.InvoiceImportResponse;
+import com.harmoniedev.api.invoice.domain.dto.response.InvoiceImportRowResult;
 import com.harmoniedev.api.invoice.domain.dto.response.InvoiceItemResponse;
 import com.harmoniedev.api.invoice.domain.dto.response.InvoiceResponse;
 import com.harmoniedev.api.invoice.domain.model.InvoiceDocument;
@@ -20,7 +26,10 @@ import com.harmoniedev.api.tax.domain.model.TaxDocument;
 import com.harmoniedev.api.tax.repository.TaxRepository;
 import java.time.LocalDate;
 import java.time.Year;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -28,8 +37,11 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class InvoiceService {
+	private static final Set<String> VALID_PAYMENT_STATUSES = Set.of("impayé", "Partiellement payé", "Payé", "Retard");
+
 	private final InvoiceRepository repository;
 	private final ClientService clientService;
+	private final ClientRepository clientRepository;
 	private final CurrencyService currencyService;
 	private final TaxRepository taxRepository;
 	private final CompanyService companyService;
@@ -40,6 +52,7 @@ public class InvoiceService {
 	public InvoiceService(
 			InvoiceRepository repository,
 			ClientService clientService,
+			ClientRepository clientRepository,
 			CurrencyService currencyService,
 			TaxRepository taxRepository,
 			CompanyService companyService,
@@ -48,6 +61,7 @@ public class InvoiceService {
 			PlanUsageService planUsageService) {
 		this.repository = repository;
 		this.clientService = clientService;
+		this.clientRepository = clientRepository;
 		this.currencyService = currencyService;
 		this.taxRepository = taxRepository;
 		this.companyService = companyService;
@@ -90,6 +104,118 @@ public class InvoiceService {
 				.build();
 		repository.save(doc);
 		return toResponse(doc);
+	}
+
+	/**
+	 * Re-enters historical invoices from a previous system (no line-item detail — a single total
+	 * per invoice) for a chosen date range. Deliberately bypasses {@link PlanUsageService}: these
+	 * are backdated records being migrated in, not new usage the current plan should be judged by.
+	 */
+	public InvoiceImportResponse bulkImport(InvoiceImportRequest request, String actorId) {
+		LocalDate from = LocalDate.parse(request.getFromDate());
+		LocalDate to = LocalDate.parse(request.getToDate());
+		List<ClientDocument> tenantClients = clientRepository.findByCreatedBy(actorId);
+		List<CurrencyResponse> tenantCurrencies = currencyService.list(actorId);
+
+		List<InvoiceImportRowResult> results = new ArrayList<>();
+		int imported = 0;
+		for (InvoiceImportRowRequest row : request.getRows()) {
+			try {
+				results.add(importRow(row, from, to, tenantClients, tenantCurrencies, actorId));
+				imported++;
+			} catch (RowImportException ex) {
+				results.add(InvoiceImportRowResult.builder().line(row.getLine()).success(false).message(ex.getMessage()).build());
+			}
+		}
+		return InvoiceImportResponse.builder()
+				.imported(imported)
+				.failed(results.size() - imported)
+				.results(results)
+				.build();
+	}
+
+	private InvoiceImportRowResult importRow(
+			InvoiceImportRowRequest row,
+			LocalDate from,
+			LocalDate to,
+			List<ClientDocument> tenantClients,
+			List<CurrencyResponse> tenantCurrencies,
+			String actorId) {
+		LocalDate date;
+		try {
+			date = LocalDate.parse(row.getDate());
+		} catch (DateTimeParseException ex) {
+			throw new RowImportException("Date invalide (attendu AAAA-MM-JJ)");
+		}
+		if (date.isBefore(from) || date.isAfter(to)) {
+			throw new RowImportException("Date hors de la période sélectionnée");
+		}
+
+		ClientDocument client = tenantClients.stream()
+				.filter(c -> clientDisplayName(c).equalsIgnoreCase(row.getClient().trim()))
+				.findFirst()
+				.orElseThrow(() -> new RowImportException("Client introuvable : " + row.getClient()));
+
+		CurrencyResponse currency = tenantCurrencies.stream()
+				.filter(c -> c.getCode().equalsIgnoreCase(row.getDevise().trim()))
+				.findFirst()
+				.orElseThrow(() -> new RowImportException("Devise introuvable : " + row.getDevise()));
+
+		String type = row.getType() != null && !row.getType().isBlank() ? row.getType() : "Standard";
+		if (!"Standard".equals(type) && !"Proforma".equals(type)) {
+			throw new RowImportException("Type invalide : " + row.getType());
+		}
+		String paymentStatus = row.getStatut() != null && VALID_PAYMENT_STATUSES.contains(row.getStatut())
+				? row.getStatut() : "impayé";
+		double total = round2(row.getMontant());
+		double paid = switch (paymentStatus) {
+			case "Payé" -> total;
+			case "Partiellement payé" -> row.getMontantPaye() != null ? round2(Math.min(row.getMontantPaye(), total)) : 0;
+			default -> 0;
+		};
+		int year = date.getYear();
+		int number = row.getNumero() != null ? row.getNumero() : nextNumber(type, year);
+
+		InvoiceDocument doc = InvoiceDocument.builder()
+				.clientId(client.getId())
+				.currencyId(currency.getId())
+				.number(number)
+				.year(year)
+				.status("Facture")
+				.paymentStatus(paymentStatus)
+				.type(type)
+				.isConverted(false)
+				.date(row.getDate())
+				.expirationDate(row.getDate())
+				.note(row.getNote())
+				.items(List.of())
+				.timbre(0)
+				.subtotal(total)
+				.taxAmount(0)
+				.total(total)
+				.paidAmount(paid)
+				.createdBy(actorId)
+				.build();
+		repository.save(doc);
+		return InvoiceImportRowResult.builder().line(row.getLine()).success(true).invoiceId(doc.getId()).build();
+	}
+
+	private static String clientDisplayName(ClientDocument client) {
+		if (client.getPerson() != null) {
+			return (nullToEmpty(client.getPerson().getPrenom()) + " " + nullToEmpty(client.getPerson().getNom())).trim();
+		}
+		if (client.getEntreprise() != null) return nullToEmpty(client.getEntreprise().getNom());
+		return "";
+	}
+
+	private static String nullToEmpty(String value) {
+		return value == null ? "" : value;
+	}
+
+	private static class RowImportException extends RuntimeException {
+		RowImportException(String message) {
+			super(message);
+		}
 	}
 
 	public List<InvoiceResponse> list() {

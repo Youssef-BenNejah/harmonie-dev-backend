@@ -1,8 +1,10 @@
 package com.harmoniedev.api.invoice.controller;
 
 import com.harmoniedev.api.common.dto.ApiResponse;
+import com.harmoniedev.api.invoice.domain.dto.request.InvoiceImportRequest;
 import com.harmoniedev.api.invoice.domain.dto.request.InvoiceRequest;
 import com.harmoniedev.api.invoice.domain.dto.request.SendInvoiceRequest;
+import com.harmoniedev.api.invoice.domain.dto.response.InvoiceImportResponse;
 import com.harmoniedev.api.invoice.domain.dto.response.InvoiceResponse;
 import com.harmoniedev.api.invoice.service.InvoiceService;
 import com.harmoniedev.api.payment.domain.dto.response.PaymentResponse;
@@ -43,6 +45,13 @@ public class InvoiceController {
 			@Valid @RequestBody InvoiceRequest request, Authentication authentication) {
 		String actorId = ((AuthenticatedUser) authentication.getPrincipal()).getId();
 		return ResponseEntity.ok(ApiResponse.success("Invoice created", service.create(request, actorId)));
+	}
+
+	@PostMapping("/import")
+	public ResponseEntity<ApiResponse<InvoiceImportResponse>> bulkImport(
+			@Valid @RequestBody InvoiceImportRequest request, Authentication authentication) {
+		String actorId = ((AuthenticatedUser) authentication.getPrincipal()).getId();
+		return ResponseEntity.ok(ApiResponse.success("Import terminé", service.bulkImport(request, actorId)));
 	}
 
 	@GetMapping
