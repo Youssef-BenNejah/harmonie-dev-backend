@@ -1,5 +1,6 @@
 package com.harmoniedev.api.plan.service;
 
+import com.harmoniedev.api.auth.domain.enums.Role;
 import com.harmoniedev.api.auth.domain.model.UserDocument;
 import com.harmoniedev.api.auth.repository.UserRepository;
 import com.harmoniedev.api.catalog.domain.model.ProductDocument;
@@ -54,7 +55,12 @@ public class PlanUsageService {
 	}
 
 	public PlanDocument resolvePlan(String userId) {
-		return userRepository.findById(userId)
+		UserDocument user = userRepository.findById(userId).orElse(null);
+		// The Super Admin owns the platform and is never subject to plan limits.
+		if (user != null && user.getRole() == Role.ADMIN) {
+			return null;
+		}
+		return java.util.Optional.ofNullable(user)
 				.map(UserDocument::getPlanId)
 				.filter(id -> id != null && !id.isBlank())
 				.flatMap(planRepository::findById)
