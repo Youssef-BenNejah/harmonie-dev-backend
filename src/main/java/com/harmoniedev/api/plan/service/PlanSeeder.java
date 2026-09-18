@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 /** Seeds the free-trial plan + three default subscription plans on first startup. */
@@ -17,6 +18,7 @@ public class PlanSeeder {
 	private final PlanRepository repository;
 
 	@EventListener(ApplicationReadyEvent.class)
+	@Order(1)
 	public void seedPlans() {
 		if (repository.count() > 0) {
 			return;

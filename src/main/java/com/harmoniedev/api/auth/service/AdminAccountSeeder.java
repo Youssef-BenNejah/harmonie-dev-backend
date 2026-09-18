@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -26,6 +27,7 @@ public class AdminAccountSeeder {
 	private final SeedProperties seedProperties;
 
 	@EventListener(ApplicationReadyEvent.class)
+	@Order(0)
 	public void seedAdmin() {
 		String email = seedProperties.getAdminEmail();
 		String password = seedProperties.getAdminPassword();
