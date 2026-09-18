@@ -7,6 +7,7 @@ import com.harmoniedev.api.joinrequest.domain.dto.request.CreateJoinRequestReque
 import com.harmoniedev.api.joinrequest.domain.dto.response.JoinRequestResponse;
 import com.harmoniedev.api.joinrequest.service.JoinRequestService;
 import com.harmoniedev.api.security.AuthenticatedUser;
+import com.harmoniedev.api.security.ClientIpResolver;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -24,8 +25,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/join-requests")
 public class JoinRequestController {
 	private final JoinRequestService joinRequestService;
+	private final ClientIpResolver clientIpResolver;
 
-	public JoinRequestController(JoinRequestService joinRequestService) {
+	public JoinRequestController(JoinRequestService joinRequestService, ClientIpResolver clientIpResolver) {
+		this.clientIpResolver = clientIpResolver;
 		this.joinRequestService = joinRequestService;
 	}
 
@@ -68,10 +71,6 @@ public class JoinRequestController {
 	}
 
 	private String resolveClientIp(HttpServletRequest request) {
-		String forwarded = request.getHeader("X-Forwarded-For");
-		if (forwarded != null && !forwarded.isBlank()) {
-			return forwarded.split(",")[0].trim();
-		}
-		return request.getRemoteAddr();
+		return clientIpResolver.resolve(request);
 	}
 }

@@ -1,5 +1,6 @@
 package com.harmoniedev.api.security.filter;
 
+import com.harmoniedev.api.security.ClientIpResolver;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.ConsumptionProbe;
@@ -28,10 +29,12 @@ public class RateLimitingFilter extends OncePerRequestFilter {
 			"/api/v1/auth/reset-password",
 			"/api/v1/join-requests");
 	private final ProxyManager<byte[]> proxyManager;
+	private final ClientIpResolver clientIpResolver;
 	private final BucketConfiguration configuration;
 
-	public RateLimitingFilter(ProxyManager<byte[]> proxyManager) {
+	public RateLimitingFilter(ProxyManager<byte[]> proxyManager, ClientIpResolver clientIpResolver) {
 		this.proxyManager = proxyManager;
+		this.clientIpResolver = clientIpResolver;
 		this.configuration = BucketConfiguration.builder()
 				.addLimit(Bandwidth.classic(5, Refill.greedy(5, Duration.ofMinutes(1))))
 				.build();
@@ -45,7 +48,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
 			throws ServletException, IOException {
-		String clientIp = resolveClientIp(request);
+		String clientIp = clientIpResolver.resolve(request);
 		byte[] bucketKey = (request.getRequestURI() + ":" + clientIp).getBytes(StandardCharsets.UTF_8);
 		Bucket bucket = proxyManager.builder().build(bucketKey, configuration);
 		ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
@@ -65,11 +68,4 @@ public class RateLimitingFilter extends OncePerRequestFilter {
 		filterChain.doFilter(request, response);
 	}
 
-	private String resolveClientIp(HttpServletRequest request) {
-		String forwarded = request.getHeader("X-Forwarded-For");
-		if (forwarded != null && !forwarded.isBlank()) {
-			return forwarded.split(",")[0].trim();
-		}
-		return request.getRemoteAddr();
-	}
 }

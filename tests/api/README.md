@@ -23,6 +23,9 @@ bash tests/api/run.sh
 | `CUSTOMER_PASSWORD` | `Client#Pass2026` | Their password |
 | `BULK` | `230` | Persons created for the pagination checks (`0` skips them) |
 
+Leave `TRUSTED_PROXIES` unset when running the suite: it checks that a rotating `X-Forwarded-For`
+header cannot dodge the rate limits.
+
 The backend must run with `APP_ENV=prod` (so CORS and Swagger are locked down) and a reachable
 Redis and MongoDB. Exit status is non-zero if any check fails. Uploading a real image to Cloudinary
 is not covered (needs a Cloudinary account).

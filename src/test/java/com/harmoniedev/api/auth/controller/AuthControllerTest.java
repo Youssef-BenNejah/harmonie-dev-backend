@@ -48,6 +48,8 @@ class AuthControllerTest {
 	private JwtAuthenticationFilter jwtAuthenticationFilter;
 	@MockBean
 	private RateLimitingFilter rateLimitingFilter;
+	@MockBean
+	private com.harmoniedev.api.security.ClientIpResolver clientIpResolver;
 
 	@Test
 	void login_setsRefreshCookie() throws Exception {

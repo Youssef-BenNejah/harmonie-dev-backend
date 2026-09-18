@@ -14,4 +14,6 @@ public class SecurityProperties {
 	private List<String> allowedOrigins = new ArrayList<>();
 	private int maxLoginAttempts;
 	private int lockDurationMinutes;
+	/** IPs/CIDRs of reverse proxies allowed to set X-Forwarded-For. Empty = never trust the header. */
+	private List<String> trustedProxies = new ArrayList<>();
 }

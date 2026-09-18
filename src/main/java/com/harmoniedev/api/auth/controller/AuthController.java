@@ -17,6 +17,7 @@ import com.harmoniedev.api.auth.domain.dto.response.UserResponse;
 import com.harmoniedev.api.auth.service.AuthResult;
 import com.harmoniedev.api.auth.service.AuthService;
 import com.harmoniedev.api.security.AuthenticatedUser;
+import com.harmoniedev.api.security.ClientIpResolver;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -46,8 +47,11 @@ public class AuthController {
 	private final AuthService authService;
 	private final AppProperties appProperties;
 	private final JwtProperties jwtProperties;
+	private final ClientIpResolver clientIpResolver;
 
-	public AuthController(AuthService authService, AppProperties appProperties, JwtProperties jwtProperties) {
+	public AuthController(AuthService authService, AppProperties appProperties, JwtProperties jwtProperties,
+			ClientIpResolver clientIpResolver) {
+		this.clientIpResolver = clientIpResolver;
 		this.authService = authService;
 		this.appProperties = appProperties;
 		this.jwtProperties = jwtProperties;
@@ -255,10 +259,6 @@ public class AuthController {
 	}
 
 	private String resolveClientIp(HttpServletRequest request) {
-		String forwarded = request.getHeader("X-Forwarded-For");
-		if (forwarded != null && !forwarded.isBlank()) {
-			return forwarded.split(",")[0].trim();
-		}
-		return request.getRemoteAddr();
+		return clientIpResolver.resolve(request);
 	}
 }

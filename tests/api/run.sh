@@ -177,6 +177,9 @@ R=""; for i in 1 2 3 4 5 6 7; do R="$R $(code -X POST $B/auth/forgot-password -H
 R=""; for i in 1 2 3 4 5 6 7; do R="$R $(code -X POST $B/auth/register -H "$J" -d "{\"email\":\"rl$i@t.io\",\"password\":\"$CUSTOMER_PASSWORD\"}")"; done; echo "  register x7:$R"
 [ "$(echo $R | grep -c 429)" = 1 ] && ok || bad "register not rate limited"
 
+R=""; for i in 1 2 3 4 5 6 7; do R="$R $(code -X POST $B/auth/verify-reset-code -H "$J" -H "X-Forwarded-For: 10.$i.$i.$i" -d '{"email":"zz@example.com","code":"000000"}')"; done; echo "  verify-reset-code x7, a different X-Forwarded-For each time:$R"
+[ "$(echo $R | grep -c 429)" = 1 ] && ok || bad "rotating X-Forwarded-For bypassed the rate limit"
+
 echo "== 11. pagination =="
 echo "  creating $BULK persons as customer A (set BULK=0 to skip)"
 for i in $(seq 1 "$BULK"); do curl -s -o /dev/null -X POST $B/persons -H "$AH" -H "$J" -d "{\"prenom\":\"P$i\",\"nom\":\"Bulk\",\"email\":\"p$i@example.com\",\"telephone\":\"1\",\"pays\":\"France\",\"adresse\":\"x\"}"; done

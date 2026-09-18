@@ -68,6 +68,7 @@ jwt:
 security:
   bcrypt-strength: ${BCRYPT_STRENGTH}
   allowed-origins: ${ALLOWED_ORIGINS}
+  trusted-proxies: ${TRUSTED_PROXIES:}
   max-login-attempts: ${MAX_LOGIN_ATTEMPTS}
   lock-duration-minutes: ${ACCOUNT_LOCK_DURATION_MINUTES}
 
