@@ -1,6 +1,7 @@
 package com.harmoniedev.api.expense.controller;
 
 import com.harmoniedev.api.common.dto.ApiResponse;
+import com.harmoniedev.api.common.paging.Paging;
 import com.harmoniedev.api.expense.domain.dto.request.DepenseRequest;
 import com.harmoniedev.api.expense.domain.dto.response.DepenseResponse;
 import com.harmoniedev.api.expense.service.DepenseService;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -35,8 +37,10 @@ public class DepenseController {
 	}
 
 	@GetMapping
-	public ResponseEntity<ApiResponse<List<DepenseResponse>>> list() {
-		return ResponseEntity.ok(ApiResponse.success("Depenses", service.list()));
+	public ResponseEntity<ApiResponse<List<DepenseResponse>>> list(
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "50") int size) {
+		return Paging.respond("Depenses", service.listPage(Paging.of(page, size)));
 	}
 
 	@GetMapping("/{id}")

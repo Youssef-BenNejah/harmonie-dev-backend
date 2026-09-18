@@ -7,6 +7,8 @@ import com.harmoniedev.api.catalog.domain.model.ProductDocument;
 import com.harmoniedev.api.catalog.repository.ProductRepository;
 import com.harmoniedev.api.plan.service.PlanUsageService;
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -38,6 +40,10 @@ public class ProductService {
 
 	public List<ProductResponse> list() {
 		return repository.findByCreatedBy(TenantScope.currentId()).stream().map(this::toResponse).toList();
+	}
+
+	public Page<ProductResponse> listPage(Pageable pageable) {
+		return repository.findByCreatedBy(TenantScope.currentId(), pageable).map(this::toResponse);
 	}
 
 	public ProductResponse get(String id) {

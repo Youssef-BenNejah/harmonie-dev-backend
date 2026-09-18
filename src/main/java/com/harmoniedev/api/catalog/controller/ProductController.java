@@ -4,6 +4,7 @@ import com.harmoniedev.api.catalog.domain.dto.request.ProductRequest;
 import com.harmoniedev.api.catalog.domain.dto.response.ProductResponse;
 import com.harmoniedev.api.catalog.service.ProductService;
 import com.harmoniedev.api.common.dto.ApiResponse;
+import com.harmoniedev.api.common.paging.Paging;
 import com.harmoniedev.api.security.AuthenticatedUser;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -35,8 +37,10 @@ public class ProductController {
 	}
 
 	@GetMapping
-	public ResponseEntity<ApiResponse<List<ProductResponse>>> list() {
-		return ResponseEntity.ok(ApiResponse.success("Services", service.list()));
+	public ResponseEntity<ApiResponse<List<ProductResponse>>> list(
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "50") int size) {
+		return Paging.respond("Services", service.listPage(Paging.of(page, size)));
 	}
 
 	@GetMapping("/{id}")

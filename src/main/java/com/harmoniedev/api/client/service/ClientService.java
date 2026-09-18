@@ -11,6 +11,8 @@ import com.harmoniedev.api.person.domain.model.PersonDocument;
 import com.harmoniedev.api.person.repository.PersonRepository;
 import com.harmoniedev.api.plan.service.PlanUsageService;
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -97,6 +99,10 @@ public class ClientService {
 
 	public List<ClientResponse> list() {
 		return clientRepository.findByCreatedBy(TenantScope.currentId()).stream().map(this::toResponse).toList();
+	}
+
+	public Page<ClientResponse> listPage(Pageable pageable) {
+		return clientRepository.findByCreatedBy(TenantScope.currentId(), pageable).map(this::toResponse);
 	}
 
 	public ClientResponse get(String id) {

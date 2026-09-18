@@ -6,6 +6,8 @@ import com.harmoniedev.api.entreprise.domain.dto.response.EntrepriseResponse;
 import com.harmoniedev.api.entreprise.domain.model.EntrepriseDocument;
 import com.harmoniedev.api.entreprise.repository.EntrepriseRepository;
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -37,6 +39,10 @@ public class EntrepriseService {
 
 	public List<EntrepriseResponse> list() {
 		return repository.findByCreatedBy(TenantScope.currentId()).stream().map(this::toResponse).toList();
+	}
+
+	public Page<EntrepriseResponse> listPage(Pageable pageable) {
+		return repository.findByCreatedBy(TenantScope.currentId(), pageable).map(this::toResponse);
 	}
 
 	public EntrepriseResponse get(String id) {

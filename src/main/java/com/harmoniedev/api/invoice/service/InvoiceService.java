@@ -32,6 +32,8 @@ import java.time.Year;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -234,6 +236,10 @@ public class InvoiceService {
 
 	public List<InvoiceResponse> list() {
 		return repository.findByCreatedBy(TenantScope.currentId()).stream().map(this::toResponse).toList();
+	}
+
+	public Page<InvoiceResponse> listPage(Pageable pageable) {
+		return repository.findByCreatedBy(TenantScope.currentId(), pageable).map(this::toResponse);
 	}
 
 	public InvoiceResponse get(String id) {

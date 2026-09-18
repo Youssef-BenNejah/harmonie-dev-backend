@@ -8,6 +8,8 @@ import com.harmoniedev.api.payment.domain.dto.response.PaymentResponse;
 import com.harmoniedev.api.payment.domain.model.PaymentDocument;
 import com.harmoniedev.api.payment.repository.PaymentRepository;
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -47,6 +49,11 @@ public class PaymentService {
 		return repository.findByCreatedBy(TenantScope.currentId()).stream()
 				.map(doc -> toResponse(doc, invoiceService.get(doc.getInvoiceId())))
 				.toList();
+	}
+
+	public Page<PaymentResponse> listPage(Pageable pageable) {
+		return repository.findByCreatedBy(TenantScope.currentId(), pageable)
+				.map(doc -> toResponse(doc, invoiceService.get(doc.getInvoiceId())));
 	}
 
 	public List<PaymentResponse> listForInvoice(String invoiceId) {

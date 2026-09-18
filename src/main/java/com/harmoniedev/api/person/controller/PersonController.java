@@ -1,6 +1,7 @@
 package com.harmoniedev.api.person.controller;
 
 import com.harmoniedev.api.common.dto.ApiResponse;
+import com.harmoniedev.api.common.paging.Paging;
 import com.harmoniedev.api.person.domain.dto.request.PersonRequest;
 import com.harmoniedev.api.person.domain.dto.response.PersonResponse;
 import com.harmoniedev.api.person.service.PersonService;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -35,8 +37,10 @@ public class PersonController {
 	}
 
 	@GetMapping
-	public ResponseEntity<ApiResponse<List<PersonResponse>>> list() {
-		return ResponseEntity.ok(ApiResponse.success("Persons", personService.list()));
+	public ResponseEntity<ApiResponse<List<PersonResponse>>> list(
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "50") int size) {
+		return Paging.respond("Persons", personService.listPage(Paging.of(page, size)));
 	}
 
 	@GetMapping("/{id}")

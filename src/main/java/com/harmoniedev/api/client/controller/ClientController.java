@@ -4,6 +4,7 @@ import com.harmoniedev.api.client.domain.dto.request.CreateClientRequest;
 import com.harmoniedev.api.client.domain.dto.response.ClientResponse;
 import com.harmoniedev.api.client.service.ClientService;
 import com.harmoniedev.api.common.dto.ApiResponse;
+import com.harmoniedev.api.common.paging.Paging;
 import com.harmoniedev.api.security.AuthenticatedUser;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -34,8 +36,10 @@ public class ClientController {
 	}
 
 	@GetMapping
-	public ResponseEntity<ApiResponse<List<ClientResponse>>> list() {
-		return ResponseEntity.ok(ApiResponse.success("Clients", clientService.list()));
+	public ResponseEntity<ApiResponse<List<ClientResponse>>> list(
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "50") int size) {
+		return Paging.respond("Clients", clientService.listPage(Paging.of(page, size)));
 	}
 
 	@GetMapping("/{id}")

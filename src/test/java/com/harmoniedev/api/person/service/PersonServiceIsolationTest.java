@@ -66,6 +66,15 @@ class PersonServiceIsolationTest {
 	}
 
 	@Test
+	void listPage_asksOnlyForTheCallersRecords() {
+		var pageable = org.springframework.data.domain.PageRequest.of(0, 10);
+		when(repository.findByCreatedBy("tenant-b", pageable))
+				.thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(ownedBy("tenant-b")), pageable, 1));
+		assertThat(service.listPage(pageable).getContent()).hasSize(1);
+		verify(repository, never()).findAll(org.mockito.ArgumentMatchers.any(org.springframework.data.domain.Pageable.class));
+	}
+
+	@Test
 	void get_ownRecord_succeeds() {
 		when(repository.findById("p1")).thenReturn(Optional.of(ownedBy("tenant-b")));
 		assertThat(service.get("p1").getId()).isEqualTo("p1");

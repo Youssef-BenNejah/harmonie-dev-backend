@@ -1,6 +1,7 @@
 package com.harmoniedev.api.invoice.controller;
 
 import com.harmoniedev.api.common.dto.ApiResponse;
+import com.harmoniedev.api.common.paging.Paging;
 import com.harmoniedev.api.invoice.domain.dto.request.InvoiceImportRequest;
 import com.harmoniedev.api.invoice.domain.dto.request.InvoiceRequest;
 import com.harmoniedev.api.invoice.domain.dto.request.SendInvoiceRequest;
@@ -64,8 +65,10 @@ public class InvoiceController {
 	}
 
 	@GetMapping
-	public ResponseEntity<ApiResponse<List<InvoiceResponse>>> list() {
-		return ResponseEntity.ok(ApiResponse.success("Invoices", service.list()));
+	public ResponseEntity<ApiResponse<List<InvoiceResponse>>> list(
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "50") int size) {
+		return Paging.respond("Invoices", service.listPage(Paging.of(page, size)));
 	}
 
 	@GetMapping("/{id}")
