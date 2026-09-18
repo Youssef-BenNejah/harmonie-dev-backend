@@ -1,5 +1,6 @@
 package com.harmoniedev.api.client.service;
 
+import com.harmoniedev.api.security.TenantScope;
 import com.harmoniedev.api.client.domain.dto.response.ClientResponse;
 import com.harmoniedev.api.client.domain.enums.ClientType;
 import com.harmoniedev.api.client.domain.model.ClientDocument;
@@ -35,6 +36,7 @@ public class ClientService {
 	/** Flags the Person as a client and creates the wrapping Client record from a snapshot of it. */
 	public ClientResponse convertPerson(String personId, String actorId) {
 		PersonDocument person = personRepository.findById(personId)
+				.filter(p -> TenantScope.owns(p.getCreatedBy()))
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Person not found"));
 		person.setClient(true);
 		personRepository.save(person);
@@ -58,6 +60,7 @@ public class ClientService {
 	/** Flags the Entreprise as a client and creates the wrapping Client record from a snapshot of it. */
 	public ClientResponse convertEntreprise(String entrepriseId, String actorId) {
 		EntrepriseDocument entreprise = entrepriseRepository.findById(entrepriseId)
+				.filter(e -> TenantScope.owns(e.getCreatedBy()))
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Entreprise not found"));
 		entreprise.setClient(true);
 		entrepriseRepository.save(entreprise);
@@ -93,7 +96,7 @@ public class ClientService {
 	}
 
 	public List<ClientResponse> list() {
-		return clientRepository.findAll().stream().map(this::toResponse).toList();
+		return clientRepository.findByCreatedBy(TenantScope.currentId()).stream().map(this::toResponse).toList();
 	}
 
 	public ClientResponse get(String id) {
@@ -101,14 +104,12 @@ public class ClientService {
 	}
 
 	public void delete(String id) {
-		if (!clientRepository.existsById(id)) {
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Client not found");
-		}
-		clientRepository.deleteById(id);
+		clientRepository.delete(findOrThrow(id));
 	}
 
 	private ClientDocument findOrThrow(String id) {
 		return clientRepository.findById(id)
+				.filter(c -> TenantScope.owns(c.getCreatedBy()))
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Client not found"));
 	}
 

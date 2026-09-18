@@ -1,12 +1,20 @@
 package com.harmoniedev.api.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
 import java.net.URI;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -47,6 +55,35 @@ public class GlobalExceptionHandler {
 		return ResponseEntity.badRequest().body(problem);
 	}
 
+	@ExceptionHandler({
+			HttpMessageNotReadableException.class,
+			MethodArgumentTypeMismatchException.class,
+			MissingServletRequestParameterException.class,
+			ConstraintViolationException.class})
+	public ResponseEntity<ProblemDetail> handleBadRequest(Exception ex, HttpServletRequest request) {
+		return problem(HttpStatus.BAD_REQUEST, "Bad request", "Malformed or invalid request", request);
+	}
+
+	@ExceptionHandler(NoResourceFoundException.class)
+	public ResponseEntity<ProblemDetail> handleNotFound(NoResourceFoundException ex, HttpServletRequest request) {
+		return problem(HttpStatus.NOT_FOUND, "Not found", "Resource not found", request);
+	}
+
+	@ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+	public ResponseEntity<ProblemDetail> handleMethod(HttpRequestMethodNotSupportedException ex, HttpServletRequest request) {
+		return problem(HttpStatus.METHOD_NOT_ALLOWED, "Method not allowed", "Method not allowed", request);
+	}
+
+	@ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+	public ResponseEntity<ProblemDetail> handleMediaType(HttpMediaTypeNotSupportedException ex, HttpServletRequest request) {
+		return problem(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "Unsupported media type", "Unsupported media type", request);
+	}
+
+	@ExceptionHandler(MaxUploadSizeExceededException.class)
+	public ResponseEntity<ProblemDetail> handleTooLarge(MaxUploadSizeExceededException ex, HttpServletRequest request) {
+		return problem(HttpStatus.PAYLOAD_TOO_LARGE, "File too large", "The uploaded file exceeds the size limit", request);
+	}
+
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<ProblemDetail> handleGeneric(Exception ex, HttpServletRequest request) {
 		log.error("Unhandled exception on {} {}", request.getMethod(), request.getRequestURI(), ex);
@@ -55,6 +92,14 @@ public class GlobalExceptionHandler {
 		problem.setType(URI.create("https://yourapp.com/errors/internal"));
 		problem.setInstance(URI.create(request.getRequestURI()));
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(problem);
+	}
+
+	private ResponseEntity<ProblemDetail> problem(HttpStatus status, String title, String detail, HttpServletRequest request) {
+		ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, detail);
+		problem.setTitle(title);
+		problem.setType(URI.create("https://yourapp.com/errors/" + status.value()));
+		problem.setInstance(URI.create(request.getRequestURI()));
+		return ResponseEntity.status(status).body(problem);
 	}
 
 	private String formatFieldError(FieldError error) {

@@ -1,5 +1,6 @@
 package com.harmoniedev.api.invoice.service;
 
+import com.harmoniedev.api.security.TenantScope;
 import com.harmoniedev.api.client.domain.dto.response.ClientResponse;
 import com.harmoniedev.api.client.domain.model.ClientDocument;
 import com.harmoniedev.api.client.repository.ClientRepository;
@@ -232,7 +233,7 @@ public class InvoiceService {
 	}
 
 	public List<InvoiceResponse> list() {
-		return repository.findAll().stream().map(this::toResponse).toList();
+		return repository.findByCreatedBy(TenantScope.currentId()).stream().map(this::toResponse).toList();
 	}
 
 	public InvoiceResponse get(String id) {
@@ -265,10 +266,7 @@ public class InvoiceService {
 	}
 
 	public void delete(String id) {
-		if (!repository.existsById(id)) {
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Invoice not found");
-		}
-		repository.deleteById(id);
+		repository.delete(findOrThrow(id));
 	}
 
 	public InvoiceResponse duplicate(String id) {
@@ -372,6 +370,7 @@ public class InvoiceService {
 
 	InvoiceDocument findOrThrow(String id) {
 		return repository.findById(id)
+				.filter(i -> TenantScope.owns(i.getCreatedBy()))
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Invoice not found"));
 	}
 
@@ -442,7 +441,7 @@ public class InvoiceService {
 	}
 
 	private int nextNumber(String type, int year) {
-		return repository.findByTypeAndYear(type, year).stream()
+		return repository.findByCreatedByAndTypeAndYear(TenantScope.currentId(), type, year).stream()
 				.mapToInt(InvoiceDocument::getNumber)
 				.max()
 				.orElse(0) + 1;
@@ -452,7 +451,7 @@ public class InvoiceService {
 		return requests.stream().map(item -> {
 			double base = item.getQuantity() * item.getPrice();
 			TaxDocument tax = (item.getTaxId() != null && !item.getTaxId().isBlank())
-					? taxRepository.findById(item.getTaxId()).orElse(null) : null;
+					? taxRepository.findById(item.getTaxId()).filter(t -> TenantScope.owns(t.getCreatedBy())).orElse(null) : null;
 			double taxRate = tax != null ? tax.getTaxvalue() : 0;
 			double taxAmount = round2(base * taxRate / 100);
 			return InvoiceItemDocument.builder()

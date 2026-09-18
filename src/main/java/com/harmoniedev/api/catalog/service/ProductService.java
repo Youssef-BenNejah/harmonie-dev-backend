@@ -1,5 +1,6 @@
 package com.harmoniedev.api.catalog.service;
 
+import com.harmoniedev.api.security.TenantScope;
 import com.harmoniedev.api.catalog.domain.dto.request.ProductRequest;
 import com.harmoniedev.api.catalog.domain.dto.response.ProductResponse;
 import com.harmoniedev.api.catalog.domain.model.ProductDocument;
@@ -36,7 +37,7 @@ public class ProductService {
 	}
 
 	public List<ProductResponse> list() {
-		return repository.findAll().stream().map(this::toResponse).toList();
+		return repository.findByCreatedBy(TenantScope.currentId()).stream().map(this::toResponse).toList();
 	}
 
 	public ProductResponse get(String id) {
@@ -56,14 +57,12 @@ public class ProductService {
 	}
 
 	public void delete(String id) {
-		if (!repository.existsById(id)) {
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found");
-		}
-		repository.deleteById(id);
+		repository.delete(findOrThrow(id));
 	}
 
 	private ProductDocument findOrThrow(String id) {
 		return repository.findById(id)
+				.filter(d -> TenantScope.owns(d.getCreatedBy()))
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
 	}
 

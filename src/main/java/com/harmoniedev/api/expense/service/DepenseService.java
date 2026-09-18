@@ -1,5 +1,6 @@
 package com.harmoniedev.api.expense.service;
 
+import com.harmoniedev.api.security.TenantScope;
 import com.harmoniedev.api.expense.domain.dto.request.DepenseRequest;
 import com.harmoniedev.api.expense.domain.dto.response.DepenseResponse;
 import com.harmoniedev.api.expense.domain.model.DepenseDocument;
@@ -36,7 +37,7 @@ public class DepenseService {
 	}
 
 	public List<DepenseResponse> list() {
-		return repository.findAll().stream().map(this::toResponse).toList();
+		return repository.findByCreatedBy(TenantScope.currentId()).stream().map(this::toResponse).toList();
 	}
 
 	public DepenseResponse get(String id) {
@@ -56,14 +57,12 @@ public class DepenseService {
 	}
 
 	public void delete(String id) {
-		if (!repository.existsById(id)) {
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Depense not found");
-		}
-		repository.deleteById(id);
+		repository.delete(findOrThrow(id));
 	}
 
 	private DepenseDocument findOrThrow(String id) {
 		return repository.findById(id)
+				.filter(d -> TenantScope.owns(d.getCreatedBy()))
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Depense not found"));
 	}
 

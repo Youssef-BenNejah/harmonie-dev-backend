@@ -6,4 +6,6 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 
 public interface PaymentRepository extends MongoRepository<PaymentDocument, String> {
 	List<PaymentDocument> findByInvoiceId(String invoiceId);
+
+	List<PaymentDocument> findByCreatedBy(String createdBy);
 }

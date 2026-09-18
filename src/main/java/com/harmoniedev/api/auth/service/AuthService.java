@@ -181,7 +181,22 @@ public class AuthService {
 		if (!user.isEnabled()) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Account disabled");
 		}
-		RefreshTokenDocument storedToken = findActiveRefreshToken(userId, refreshToken);
+		RefreshTokenDocument storedToken;
+		try {
+			storedToken = findActiveRefreshToken(userId, refreshToken);
+		} catch (ResponseStatusException ex) {
+			// A rotated (already revoked) token showing up again means it was stolen or replayed:
+			// kill every session for this user instead of just rejecting the request.
+			refreshTokenRepository.findByTokenHash(hashRefreshToken(refreshToken))
+					.filter(RefreshTokenDocument::isRevoked)
+					.ifPresent(reused -> {
+						List<RefreshTokenDocument> active = refreshTokenRepository.findByUserIdAndRevokedFalse(userId);
+						active.forEach(t -> t.setRevoked(true));
+						refreshTokenRepository.saveAll(active);
+						auditService.log(userId, AuditAction.REFRESH, ipAddress, userAgent);
+					});
+			throw ex;
+		}
 		boolean rememberMe = storedToken.isRememberMe();
 		storedToken.setRevoked(true);
 		refreshTokenRepository.save(storedToken);

@@ -3,6 +3,7 @@ package com.harmoniedev.api.config;
 import com.harmoniedev.api.security.filter.JwtAuthenticationFilter;
 import com.harmoniedev.api.security.filter.RateLimitingFilter;
 import java.util.List;
+import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.http.MediaType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -73,13 +74,15 @@ public class SecurityConfig {
 	}
 
 	@Bean
-	public CorsConfigurationSource corsConfigurationSource(SecurityProperties properties) {
+	public CorsConfigurationSource corsConfigurationSource(SecurityProperties properties, AppProperties appProperties) {
 		CorsConfiguration config = new CorsConfiguration();
-		// Dev-only: reflects whatever Origin the browser sends instead of checking against
-		// ALLOWED_ORIGINS, so devtunnels URLs (which change every session) always work without
-		// editing .env. setAllowedOriginPatterns (not setAllowedOrigins) is required here because
-		// allowCredentials(true) below forbids the literal "*" value with setAllowedOrigins.
-		config.setAllowedOriginPatterns(List.of("*"));
+		if (appProperties.isDev()) {
+			// Dev only: devtunnels URLs change every session, so reflect any origin. Never in prod.
+			config.setAllowedOriginPatterns(List.of("*"));
+		} else {
+			// Prod: only the origins listed in ALLOWED_ORIGINS. An empty list allows none.
+			config.setAllowedOrigins(properties.getAllowedOrigins());
+		}
 		config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 		config.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With"));
 		config.setAllowCredentials(true);
@@ -108,8 +111,10 @@ public class SecurityConfig {
 			JwtAuthenticationFilter jwtAuthenticationFilter,
 			RateLimitingFilter rateLimitingFilter,
 			CorsConfigurationSource corsConfigurationSource,
+			AppProperties appProperties,
 			AuthenticationEntryPoint restAuthenticationEntryPoint,
 			AccessDeniedHandler restAccessDeniedHandler) throws Exception {
+		boolean apiDocsOpen = appProperties.isDev();
 		http.csrf(csrf -> csrf.disable())
 				.cors(cors -> cors.configurationSource(corsConfigurationSource))
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -127,7 +132,8 @@ public class SecurityConfig {
 						.requestMatchers(HttpMethod.POST, "/api/v1/plans").hasRole("ADMIN")
 						.requestMatchers(HttpMethod.PUT, "/api/v1/plans/**").hasRole("ADMIN")
 						.requestMatchers(HttpMethod.DELETE, "/api/v1/plans/**").hasRole("ADMIN")
-						.requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/api-docs/**").permitAll()
+						.requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/api-docs/**")
+						.access((authentication, context) -> new AuthorizationDecision(apiDocsOpen))
 						.anyRequest().authenticated())
 				.exceptionHandling(exceptions -> exceptions
 						.authenticationEntryPoint(restAuthenticationEntryPoint)

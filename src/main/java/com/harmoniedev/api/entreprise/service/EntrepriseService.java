@@ -1,5 +1,6 @@
 package com.harmoniedev.api.entreprise.service;
 
+import com.harmoniedev.api.security.TenantScope;
 import com.harmoniedev.api.entreprise.domain.dto.request.EntrepriseRequest;
 import com.harmoniedev.api.entreprise.domain.dto.response.EntrepriseResponse;
 import com.harmoniedev.api.entreprise.domain.model.EntrepriseDocument;
@@ -35,7 +36,7 @@ public class EntrepriseService {
 	}
 
 	public List<EntrepriseResponse> list() {
-		return repository.findAll().stream().map(this::toResponse).toList();
+		return repository.findByCreatedBy(TenantScope.currentId()).stream().map(this::toResponse).toList();
 	}
 
 	public EntrepriseResponse get(String id) {
@@ -57,14 +58,12 @@ public class EntrepriseService {
 	}
 
 	public void delete(String id) {
-		if (!repository.existsById(id)) {
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Entreprise not found");
-		}
-		repository.deleteById(id);
+		repository.delete(findOrThrow(id));
 	}
 
 	EntrepriseDocument findOrThrow(String id) {
 		return repository.findById(id)
+				.filter(d -> TenantScope.owns(d.getCreatedBy()))
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Entreprise not found"));
 	}
 

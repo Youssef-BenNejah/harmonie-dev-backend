@@ -1,5 +1,6 @@
 package com.harmoniedev.api.expense.service;
 
+import com.harmoniedev.api.security.TenantScope;
 import com.harmoniedev.api.expense.domain.dto.request.DepenseCategoryRequest;
 import com.harmoniedev.api.expense.domain.dto.response.DepenseCategoryResponse;
 import com.harmoniedev.api.expense.domain.model.DepenseCategoryDocument;
@@ -33,7 +34,7 @@ public class DepenseCategoryService {
 	}
 
 	public List<DepenseCategoryResponse> list() {
-		return repository.findAll().stream().map(this::toResponse).toList();
+		return repository.findByCreatedBy(TenantScope.currentId()).stream().map(this::toResponse).toList();
 	}
 
 	public DepenseCategoryResponse update(String id, DepenseCategoryRequest request) {
@@ -46,14 +47,12 @@ public class DepenseCategoryService {
 	}
 
 	public void delete(String id) {
-		if (!repository.existsById(id)) {
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found");
-		}
-		repository.deleteById(id);
+		repository.delete(findOrThrow(id));
 	}
 
 	private DepenseCategoryDocument findOrThrow(String id) {
 		return repository.findById(id)
+				.filter(d -> TenantScope.owns(d.getCreatedBy()))
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found"));
 	}
 

@@ -1,5 +1,6 @@
 package com.harmoniedev.api.payment.service;
 
+import com.harmoniedev.api.security.TenantScope;
 import com.harmoniedev.api.invoice.domain.dto.response.InvoiceResponse;
 import com.harmoniedev.api.invoice.service.InvoiceService;
 import com.harmoniedev.api.payment.domain.dto.request.PaymentRequest;
@@ -43,7 +44,7 @@ public class PaymentService {
 	}
 
 	public List<PaymentResponse> list() {
-		return repository.findAll().stream()
+		return repository.findByCreatedBy(TenantScope.currentId()).stream()
 				.map(doc -> toResponse(doc, invoiceService.get(doc.getInvoiceId())))
 				.toList();
 	}
@@ -51,6 +52,7 @@ public class PaymentService {
 	public List<PaymentResponse> listForInvoice(String invoiceId) {
 		InvoiceResponse invoice = invoiceService.get(invoiceId);
 		return repository.findByInvoiceId(invoiceId).stream()
+				.filter(doc -> TenantScope.owns(doc.getCreatedBy()))
 				.map(doc -> toResponse(doc, invoice))
 				.toList();
 	}
@@ -70,6 +72,7 @@ public class PaymentService {
 
 	private PaymentDocument findOrThrow(String id) {
 		return repository.findById(id)
+				.filter(p -> TenantScope.owns(p.getCreatedBy()))
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Payment not found"));
 	}
 

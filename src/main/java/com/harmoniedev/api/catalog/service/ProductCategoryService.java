@@ -1,5 +1,6 @@
 package com.harmoniedev.api.catalog.service;
 
+import com.harmoniedev.api.security.TenantScope;
 import com.harmoniedev.api.catalog.domain.dto.request.ProductCategoryRequest;
 import com.harmoniedev.api.catalog.domain.dto.response.ProductCategoryResponse;
 import com.harmoniedev.api.catalog.domain.model.ProductCategoryDocument;
@@ -30,7 +31,7 @@ public class ProductCategoryService {
 	}
 
 	public List<ProductCategoryResponse> list() {
-		return repository.findAll().stream().map(this::toResponse).toList();
+		return repository.findByCreatedBy(TenantScope.currentId()).stream().map(this::toResponse).toList();
 	}
 
 	public ProductCategoryResponse update(String id, ProductCategoryRequest request) {
@@ -44,14 +45,12 @@ public class ProductCategoryService {
 	}
 
 	public void delete(String id) {
-		if (!repository.existsById(id)) {
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found");
-		}
-		repository.deleteById(id);
+		repository.delete(findOrThrow(id));
 	}
 
 	private ProductCategoryDocument findOrThrow(String id) {
 		return repository.findById(id)
+				.filter(d -> TenantScope.owns(d.getCreatedBy()))
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found"));
 	}
 

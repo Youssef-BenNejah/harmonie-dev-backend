@@ -1,5 +1,6 @@
 package com.harmoniedev.api.person.service;
 
+import com.harmoniedev.api.security.TenantScope;
 import com.harmoniedev.api.person.domain.dto.request.PersonRequest;
 import com.harmoniedev.api.person.domain.dto.response.PersonResponse;
 import com.harmoniedev.api.person.domain.model.PersonDocument;
@@ -34,7 +35,7 @@ public class PersonService {
 	}
 
 	public List<PersonResponse> list() {
-		return repository.findAll().stream().map(this::toResponse).toList();
+		return repository.findByCreatedBy(TenantScope.currentId()).stream().map(this::toResponse).toList();
 	}
 
 	public PersonResponse get(String id) {
@@ -55,14 +56,12 @@ public class PersonService {
 	}
 
 	public void delete(String id) {
-		if (!repository.existsById(id)) {
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Person not found");
-		}
-		repository.deleteById(id);
+		repository.delete(findOrThrow(id));
 	}
 
 	PersonDocument findOrThrow(String id) {
 		return repository.findById(id)
+				.filter(d -> TenantScope.owns(d.getCreatedBy()))
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Person not found"));
 	}
 

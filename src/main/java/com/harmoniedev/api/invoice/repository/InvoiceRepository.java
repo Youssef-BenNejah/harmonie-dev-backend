@@ -5,5 +5,7 @@ import java.util.List;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
 public interface InvoiceRepository extends MongoRepository<InvoiceDocument, String> {
-	List<InvoiceDocument> findByTypeAndYear(String type, int year);
+	List<InvoiceDocument> findByCreatedBy(String createdBy);
+
+	List<InvoiceDocument> findByCreatedByAndTypeAndYear(String createdBy, String type, int year);
 }

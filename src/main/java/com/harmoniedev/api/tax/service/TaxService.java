@@ -1,5 +1,6 @@
 package com.harmoniedev.api.tax.service;
 
+import com.harmoniedev.api.security.TenantScope;
 import com.harmoniedev.api.tax.domain.dto.request.TaxRequest;
 import com.harmoniedev.api.tax.domain.dto.response.TaxResponse;
 import com.harmoniedev.api.tax.domain.model.TaxDocument;
@@ -37,7 +38,7 @@ public class TaxService {
 	}
 
 	public List<TaxResponse> list() {
-		return repository.findAll().stream().map(this::toResponse).toList();
+		return repository.findByCreatedBy(TenantScope.currentId()).stream().map(this::toResponse).toList();
 	}
 
 	public TaxResponse get(String id) {
@@ -58,10 +59,7 @@ public class TaxService {
 	}
 
 	public void delete(String id) {
-		if (!repository.existsById(id)) {
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Tax not found");
-		}
-		repository.deleteById(id);
+		repository.delete(findOrThrow(id));
 	}
 
 	public TaxResponse setDefault(String id) {
@@ -73,7 +71,7 @@ public class TaxService {
 	}
 
 	private void clearExistingDefault() {
-		repository.findAll().stream()
+		repository.findByCreatedBy(TenantScope.currentId()).stream()
 				.filter(TaxDocument::isDefault)
 				.forEach(t -> {
 					t.setDefault(false);
@@ -83,6 +81,7 @@ public class TaxService {
 
 	private TaxDocument findOrThrow(String id) {
 		return repository.findById(id)
+				.filter(d -> TenantScope.owns(d.getCreatedBy()))
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tax not found"));
 	}
 

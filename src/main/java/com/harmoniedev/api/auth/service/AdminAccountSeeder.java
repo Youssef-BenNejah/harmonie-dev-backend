@@ -24,12 +24,17 @@ public class AdminAccountSeeder {
 	private final UserRepository userRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final SeedProperties seedProperties;
+	private final com.harmoniedev.api.config.AppProperties appProperties;
 
 	@EventListener(ApplicationReadyEvent.class)
 	public void seedAdmin() {
 		String email = seedProperties.getAdminEmail();
 		String password = seedProperties.getAdminPassword();
 		if (email == null || email.isBlank() || password == null || password.isBlank()) {
+			return;
+		}
+		if (!appProperties.isDev() && password.length() < 12) {
+			log.warn("Skipping admin seed: SEED_ADMIN_PASSWORD must be at least 12 characters outside dev");
 			return;
 		}
 		if (userRepository.existsByRole(Role.ADMIN)) {

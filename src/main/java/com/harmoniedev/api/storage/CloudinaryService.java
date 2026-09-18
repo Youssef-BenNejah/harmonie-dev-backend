@@ -41,6 +41,7 @@ public class CloudinaryService {
 		if (file.getSize() > MAX_SIZE_BYTES) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File exceeds the 5 MB limit");
 		}
+		UploadSignatures.assertMatchesDeclaredType(file);
 		try {
 			Map<?, ?> result = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap(
 					"folder", ROOT_FOLDER + "/" + folder,
@@ -72,6 +73,7 @@ public class CloudinaryService {
 		if (file.getSize() > MAX_DOCUMENT_SIZE_BYTES) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File exceeds the 8 MB limit");
 		}
+		UploadSignatures.assertMatchesDeclaredType(file);
 		try {
 			Map<?, ?> result = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap(
 					"folder", ROOT_FOLDER + "/" + folder,

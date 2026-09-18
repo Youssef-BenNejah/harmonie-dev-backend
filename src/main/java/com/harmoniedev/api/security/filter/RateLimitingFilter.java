@@ -12,6 +12,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Set;
 import java.nio.charset.StandardCharsets;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
@@ -19,6 +20,13 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 @Component
 public class RateLimitingFilter extends OncePerRequestFilter {
+	private static final Set<String> LIMITED_PATHS = Set.of(
+			"/api/v1/auth/login",
+			"/api/v1/auth/register",
+			"/api/v1/auth/forgot-password",
+			"/api/v1/auth/verify-reset-code",
+			"/api/v1/auth/reset-password",
+			"/api/v1/join-requests");
 	private final ProxyManager<byte[]> proxyManager;
 	private final BucketConfiguration configuration;
 
@@ -31,15 +39,14 @@ public class RateLimitingFilter extends OncePerRequestFilter {
 
 	@Override
 	protected boolean shouldNotFilter(HttpServletRequest request) {
-		return !HttpMethod.POST.matches(request.getMethod())
-				|| !"/api/v1/auth/login".equals(request.getRequestURI());
+		return !HttpMethod.POST.matches(request.getMethod()) || !LIMITED_PATHS.contains(request.getRequestURI());
 	}
 
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
 			throws ServletException, IOException {
 		String clientIp = resolveClientIp(request);
-		byte[] bucketKey = ("login:" + clientIp).getBytes(StandardCharsets.UTF_8);
+		byte[] bucketKey = (request.getRequestURI() + ":" + clientIp).getBytes(StandardCharsets.UTF_8);
 		Bucket bucket = proxyManager.builder().build(bucketKey, configuration);
 		ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
 		if (!probe.isConsumed()) {
@@ -49,7 +56,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
 					+ "\"type\":\"https://yourapp.com/errors/rate-limit\","
 					+ "\"title\":\"Too Many Requests\","
 					+ "\"status\":429,"
-					+ "\"detail\":\"Too many login attempts\","
+					+ "\"detail\":\"Too many attempts, try again in a minute\","
 					+ "\"instance\":\"" + request.getRequestURI() + "\""
 					+ "}";
 			response.getWriter().write(body);

@@ -1,5 +1,6 @@
 package com.harmoniedev.api.currency.service;
 
+import com.harmoniedev.api.security.TenantScope;
 import com.harmoniedev.api.currency.domain.dto.request.CurrencyRequest;
 import com.harmoniedev.api.currency.domain.dto.response.CurrencyResponse;
 import com.harmoniedev.api.currency.domain.model.CurrencyDocument;
@@ -33,7 +34,7 @@ public class CurrencyService {
 	}
 
 	public List<CurrencyResponse> list(String actorId) {
-		return repository.findByCreatedBy(actorId).stream().map(this::toResponse).toList();
+		return repository.findByCreatedBy(TenantScope.currentId()).stream().map(this::toResponse).toList();
 	}
 
 	public CurrencyResponse get(String id) {
@@ -50,14 +51,12 @@ public class CurrencyService {
 	}
 
 	public void delete(String id) {
-		if (!repository.existsById(id)) {
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Currency not found");
-		}
-		repository.deleteById(id);
+		repository.delete(findOrThrow(id));
 	}
 
 	private CurrencyDocument findOrThrow(String id) {
 		return repository.findById(id)
+				.filter(d -> TenantScope.owns(d.getCreatedBy()))
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Currency not found"));
 	}
 
