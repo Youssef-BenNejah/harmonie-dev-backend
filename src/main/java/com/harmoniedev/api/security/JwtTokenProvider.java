@@ -15,6 +15,7 @@ import java.security.spec.X509EncodedKeySpec;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.Date;
+import java.util.UUID;
 import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -66,6 +67,7 @@ public class JwtTokenProvider {
 		Instant now = Instant.now();
 		return Jwts.builder()
 				.subject(user.getId())
+				.id(UUID.randomUUID().toString())
 				.issuer("harmonie-dev-api")
 				.issuedAt(Date.from(now))
 				.expiration(Date.from(now.plusMillis(properties.getAccessTokenExpiry())))
@@ -80,6 +82,7 @@ public class JwtTokenProvider {
 		Instant now = Instant.now();
 		return Jwts.builder()
 				.subject(user.getId())
+				.id(UUID.randomUUID().toString())
 				.issuer("harmonie-dev-api")
 				.issuedAt(Date.from(now))
 				.expiration(Date.from(now.plusMillis(properties.getRefreshTokenExpiry())))
