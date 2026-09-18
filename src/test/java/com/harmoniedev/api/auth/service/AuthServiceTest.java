@@ -59,7 +59,7 @@ class AuthServiceTest {
 	@Mock
 	private MailService mailService;
 	@Mock
-	private org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
+	private com.harmoniedev.api.security.KeyValueStore redisTemplate;
 	@Mock
 	private com.harmoniedev.api.storage.CloudinaryService cloudinaryService;
 	@Mock

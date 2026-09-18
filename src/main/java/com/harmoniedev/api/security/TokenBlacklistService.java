@@ -2,17 +2,16 @@ package com.harmoniedev.api.security;
 
 import java.time.Duration;
 import java.time.Instant;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
 public class TokenBlacklistService {
 	private static final String PREFIX = "blacklist:";
-	private final RedisTemplate<String, String> redisTemplate;
+	private final KeyValueStore store;
 	private final JwtTokenProvider jwtTokenProvider;
 
-	public TokenBlacklistService(RedisTemplate<String, String> redisTemplate, JwtTokenProvider jwtTokenProvider) {
-		this.redisTemplate = redisTemplate;
+	public TokenBlacklistService(KeyValueStore store, JwtTokenProvider jwtTokenProvider) {
+		this.store = store;
 		this.jwtTokenProvider = jwtTokenProvider;
 	}
 
@@ -24,14 +23,13 @@ public class TokenBlacklistService {
 				return;
 			}
 			Duration ttl = Duration.between(now, expiration);
-			redisTemplate.opsForValue().set(PREFIX + token, "1", ttl);
+			store.set(PREFIX + token, "1", ttl);
 		} catch (Exception ex) {
 			// ignore invalid tokens
 		}
 	}
 
 	public boolean isBlacklisted(String token) {
-		Boolean exists = redisTemplate.hasKey(PREFIX + token);
-		return Boolean.TRUE.equals(exists);
+		return store.hasKey(PREFIX + token);
 	}
 }

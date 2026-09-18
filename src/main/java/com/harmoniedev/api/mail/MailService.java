@@ -87,6 +87,10 @@ public class MailService {
 			mailSender.send(message);
 			log.info("Sent email '{}' to {}", subject, toEmail);
 		} catch (Exception ex) {
+			if (appProperties.isDesktop()) {
+				log.warn("Skipping email '{}' to {} (no mail server configured in desktop mode)", subject, toEmail);
+				return;
+			}
 			log.error("Failed to send email '{}' to {}", subject, toEmail, ex);
 			throw new IllegalStateException("Failed to send email", ex);
 		}

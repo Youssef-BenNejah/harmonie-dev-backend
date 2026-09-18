@@ -1,32 +1,21 @@
 package com.harmoniedev.api.security.filter;
 
-import io.github.bucket4j.Bandwidth;
-import io.github.bucket4j.Bucket;
-import io.github.bucket4j.ConsumptionProbe;
-import io.github.bucket4j.Refill;
-import io.github.bucket4j.distributed.proxy.ProxyManager;
-import io.github.bucket4j.BucketConfiguration;
+import com.harmoniedev.api.security.ratelimit.LoginRateLimiter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.time.Duration;
-import java.nio.charset.StandardCharsets;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 @Component
 public class RateLimitingFilter extends OncePerRequestFilter {
-	private final ProxyManager<byte[]> proxyManager;
-	private final BucketConfiguration configuration;
+	private final LoginRateLimiter rateLimiter;
 
-	public RateLimitingFilter(ProxyManager<byte[]> proxyManager) {
-		this.proxyManager = proxyManager;
-		this.configuration = BucketConfiguration.builder()
-				.addLimit(Bandwidth.classic(5, Refill.greedy(5, Duration.ofMinutes(1))))
-				.build();
+	public RateLimitingFilter(LoginRateLimiter rateLimiter) {
+		this.rateLimiter = rateLimiter;
 	}
 
 	@Override
@@ -39,10 +28,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
 			throws ServletException, IOException {
 		String clientIp = resolveClientIp(request);
-		byte[] bucketKey = ("login:" + clientIp).getBytes(StandardCharsets.UTF_8);
-		Bucket bucket = proxyManager.builder().build(bucketKey, configuration);
-		ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
-		if (!probe.isConsumed()) {
+		if (!rateLimiter.tryConsume("login:" + clientIp)) {
 			response.setStatus(429);
 			response.setContentType("application/problem+json");
 			String body = "{"

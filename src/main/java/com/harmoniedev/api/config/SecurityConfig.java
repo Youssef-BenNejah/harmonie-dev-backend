@@ -128,6 +128,10 @@ public class SecurityConfig {
 						.requestMatchers(HttpMethod.PUT, "/api/v1/plans/**").hasRole("ADMIN")
 						.requestMatchers(HttpMethod.DELETE, "/api/v1/plans/**").hasRole("ADMIN")
 						.requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/api-docs/**").permitAll()
+						// Desktop build only (StaticResourceConfig) — served files replace what Cloudinary's
+						// public URLs do in the cloud deployment, so they need to be readable without a token
+						// too (an <img src> can't attach an Authorization header).
+						.requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
 						.anyRequest().authenticated())
 				.exceptionHandling(exceptions -> exceptions
 						.authenticationEntryPoint(restAuthenticationEntryPoint)

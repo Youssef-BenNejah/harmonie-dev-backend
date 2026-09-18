@@ -7,10 +7,12 @@ import io.lettuce.core.RedisURI;
 import io.lettuce.core.api.StatefulRedisConnection;
 import io.lettuce.core.codec.ByteArrayCodec;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
+@ConditionalOnProperty(prefix = "app", name = "mode", havingValue = "cloud", matchIfMissing = true)
 public class RateLimitConfig {
 	@Value("${spring.data.redis.host}")
 	private String redisHost;

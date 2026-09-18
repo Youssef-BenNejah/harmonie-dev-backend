@@ -23,7 +23,7 @@ import com.harmoniedev.api.invoice.repository.InvoiceRepository;
 import com.harmoniedev.api.mail.MailService;
 import com.harmoniedev.api.pdf.InvoicePdfService;
 import com.harmoniedev.api.plan.service.PlanUsageService;
-import com.harmoniedev.api.storage.CloudinaryService;
+import com.harmoniedev.api.storage.FileStorageService;
 import com.harmoniedev.api.tax.domain.model.TaxDocument;
 import com.harmoniedev.api.tax.repository.TaxRepository;
 import java.time.LocalDate;
@@ -51,7 +51,7 @@ public class InvoiceService {
 	private final InvoicePdfService invoicePdfService;
 	private final MailService mailService;
 	private final PlanUsageService planUsageService;
-	private final CloudinaryService cloudinaryService;
+	private final FileStorageService cloudinaryService;
 
 	public InvoiceService(
 			InvoiceRepository repository,
@@ -63,7 +63,7 @@ public class InvoiceService {
 			InvoicePdfService invoicePdfService,
 			MailService mailService,
 			PlanUsageService planUsageService,
-			CloudinaryService cloudinaryService) {
+			FileStorageService cloudinaryService) {
 		this.repository = repository;
 		this.clientService = clientService;
 		this.clientRepository = clientRepository;

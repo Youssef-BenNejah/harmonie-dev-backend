@@ -4,6 +4,7 @@ import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import java.io.IOException;
 import java.util.Map;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -13,9 +14,13 @@ import org.springframework.web.server.ResponseStatusException;
  * Uploads images to Cloudinary under a single well-known root folder ("harmonie-dev") so every
  * asset the app stores — company logos today, other per-tenant files later — lives in one place
  * in the Cloudinary media library instead of scattered at the account root.
+ *
+ * <p>Only active for the cloud deployment ({@code app.mode=cloud}, the default) — the standalone
+ * desktop build has no Cloudinary account and uses {@link LocalFileStorageService} instead.
  */
 @Service
-public class CloudinaryService {
+@ConditionalOnProperty(prefix = "app", name = "mode", havingValue = "cloud", matchIfMissing = true)
+public class CloudinaryService implements FileStorageService {
 	private static final String ROOT_FOLDER = "harmonie-dev";
 	private static final long MAX_SIZE_BYTES = 5L * 1024 * 1024;
 	private static final long MAX_DOCUMENT_SIZE_BYTES = 8L * 1024 * 1024;
@@ -30,6 +35,7 @@ public class CloudinaryService {
 	 * @param folder relative folder path under the "harmonie-dev" root, e.g. "companies/{ownerId}"
 	 * @param publicId stable id within that folder — re-uploading with the same id replaces the asset
 	 */
+	@Override
 	public CloudinaryUploadResult uploadImage(MultipartFile file, String folder, String publicId) {
 		if (file == null || file.isEmpty()) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File is required");
@@ -59,6 +65,7 @@ public class CloudinaryService {
 	 * serves either back from the same "image" resource type, so the frontend can render an
 	 * <img>/<iframe> straight off the returned URL without knowing which one it got.
 	 */
+	@Override
 	public CloudinaryUploadResult uploadDocument(MultipartFile file, String folder, String publicId) {
 		if (file == null || file.isEmpty()) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File is required");

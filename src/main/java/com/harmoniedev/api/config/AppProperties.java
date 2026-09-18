@@ -11,8 +11,13 @@ public class AppProperties {
 	private String env;
 	private int port;
 	private String frontendUrl;
+	private String mode = "cloud";
 
 	public boolean isDev() {
 		return env != null && env.equalsIgnoreCase("dev");
+	}
+
+	public boolean isDesktop() {
+		return "desktop".equalsIgnoreCase(mode);
 	}
 }

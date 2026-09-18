@@ -2,6 +2,7 @@ package com.harmoniedev.api.storage;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -10,6 +11,7 @@ import org.springframework.context.annotation.Configuration;
 @EnableConfigurationProperties(CloudinaryProperties.class)
 public class CloudinaryConfig {
 	@Bean
+	@ConditionalOnProperty(prefix = "app", name = "mode", havingValue = "cloud", matchIfMissing = true)
 	public Cloudinary cloudinary(CloudinaryProperties properties) {
 		return new Cloudinary(ObjectUtils.asMap(
 				"cloud_name", properties.getCloudName(),

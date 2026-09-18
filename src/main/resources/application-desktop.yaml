@@ -1,0 +1,75 @@
+# Activated with APP_ENV=desktop. Overrides application.yaml so the jar can boot with zero
+# external services (no MongoDB Atlas, no Redis, no real SMTP/Cloudinary account) — everything
+# it needs is either bundled by the desktop app (local mongod) or done in-process.
+#
+# jwt.private-key/public-key and actuator.password are deliberately left as required env vars
+# (no default) rather than a fixed value baked into this committed file — the desktop launcher
+# (new/desktop/main.js) generates a fresh RSA keypair + random actuator password per install on
+# first run and passes them in as JWT_PRIVATE_KEY/JWT_PUBLIC_KEY/ACTUATOR_PASSWORD. This profile
+# is for local, single-user test installs only — never point it at a real Atlas cluster or expose
+# its port to the network.
+spring:
+  data:
+    mongodb:
+      uri: mongodb://127.0.0.1:27117/harmonie-desktop
+      database: harmonie-desktop
+      auto-index-creation: true
+  mail:
+    host: 127.0.0.1
+    port: 2525
+    username: ""
+    password: ""
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisReactiveAutoConfiguration
+
+app:
+  mode: desktop
+  frontend-url: http://localhost:5183
+
+mail:
+  from-name: Harmonie-dev (local)
+
+seed:
+  admin-email: admin@harmonie.local
+  admin-password: HarmonieDesktop#2026
+
+cloudinary:
+  cloud-name: unused
+  api-key: unused
+  api-secret: unused
+
+storage:
+  local-dir: ${user.home}/.harmonie-dev/uploads
+
+jwt:
+  # Generated per-install by new/desktop/main.js and passed in as env vars — never a fixed
+  # value in this committed file (a shared signing key baked into git history would let anyone
+  # who reads the repo forge tokens for every install).
+  private-key: ${JWT_PRIVATE_KEY}
+  public-key: ${JWT_PUBLIC_KEY}
+  access-token-expiry: 900000
+  refresh-token-expiry: 604800000
+
+security:
+  bcrypt-strength: 10
+  allowed-origins: "*"
+  max-login-attempts: 5
+  lock-duration-minutes: 15
+
+actuator:
+  username: admin
+  # Also generated per-install (see jwt.private-key above).
+  password: ${ACTUATOR_PASSWORD}
+
+management:
+  health:
+    mail:
+      enabled: false

@@ -4,7 +4,7 @@ import com.harmoniedev.api.company.domain.dto.request.CompanyRequest;
 import com.harmoniedev.api.company.domain.dto.response.CompanyResponse;
 import com.harmoniedev.api.company.domain.model.CompanyDocument;
 import com.harmoniedev.api.company.repository.CompanyRepository;
-import com.harmoniedev.api.storage.CloudinaryService;
+import com.harmoniedev.api.storage.FileStorageService;
 import com.harmoniedev.api.storage.CloudinaryUploadResult;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -12,9 +12,9 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 public class CompanyService {
 	private final CompanyRepository repository;
-	private final CloudinaryService cloudinaryService;
+	private final FileStorageService cloudinaryService;
 
-	public CompanyService(CompanyRepository repository, CloudinaryService cloudinaryService) {
+	public CompanyService(CompanyRepository repository, FileStorageService cloudinaryService) {
 		this.repository = repository;
 		this.cloudinaryService = cloudinaryService;
 	}
